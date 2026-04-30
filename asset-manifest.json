@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/wanjuan-demo/static/css/main.45eb18e3.css",
-    "main.js": "/wanjuan-demo/static/js/main.a703a8c5.js",
+    "main.js": "/wanjuan-demo/static/js/main.7a71b8e5.js",
     "static/js/453.f732de9b.chunk.js": "/wanjuan-demo/static/js/453.f732de9b.chunk.js",
     "index.html": "/wanjuan-demo/index.html",
     "main.45eb18e3.css.map": "/wanjuan-demo/static/css/main.45eb18e3.css.map",
-    "main.a703a8c5.js.map": "/wanjuan-demo/static/js/main.a703a8c5.js.map",
+    "main.7a71b8e5.js.map": "/wanjuan-demo/static/js/main.7a71b8e5.js.map",
     "453.f732de9b.chunk.js.map": "/wanjuan-demo/static/js/453.f732de9b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.45eb18e3.css",
-    "static/js/main.a703a8c5.js"
+    "static/js/main.7a71b8e5.js"
   ]
 }
