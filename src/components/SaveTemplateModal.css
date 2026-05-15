@@ -1,0 +1,100 @@
+/* 保存模板Modal样式 */
+
+.save-template-modal .ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 24px;
+}
+
+.save-template-modal .ant-modal-body {
+  padding: 24px;
+}
+
+.save-template-modal .ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.save-template-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.save-template-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 500;
+}
+
+.required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+.char-count-suffix {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+/* Prompt文本框样式 */
+.prompt-textarea-wrapper {
+  position: relative;
+  border: 2px solid #1890ff;
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+}
+
+.prompt-textarea-wrapper .ant-input {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.prompt-textarea-wrapper .ant-input:focus {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.prompt-char-count {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 12px;
+  color: #bfbfbf;
+  background: white;
+  padding: 2px 4px;
+}
+
+.save-template-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* 名称输入框样式优化 */
+.save-template-field .ant-input {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.save-template-field .ant-input-suffix {
+  display: none;
+}
+
+.save-template-field .ant-input-show-count-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #bfbfbf;
+}

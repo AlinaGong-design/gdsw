@@ -1,0 +1,172 @@
+/* Agent设置抽屉样式 */
+
+.agent-settings-drawer .drawer-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* 设置卡片 */
+.settings-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
+}
+
+.settings-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.settings-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+/* 左侧标签区域 */
+.settings-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.settings-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #262626;
+}
+
+/* 右侧控件区域 */
+.settings-control {
+  flex: 0 0 auto;
+}
+
+.mode-select .ant-select-selector {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 15px;
+  font-weight: 500;
+  color: #262626;
+  text-align: right;
+  padding: 0 !important;
+}
+
+.mode-select .ant-select-selection-item {
+  padding-right: 0 !important;
+}
+
+.mode-select:hover .ant-select-selector {
+  background: #fafafa !important;
+}
+
+/* 滑块控件区域 */
+.settings-control-slider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 300px;
+}
+
+.slider-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+  min-width: 50px;
+  text-align: right;
+}
+
+/* 滑块样式优化 */
+.settings-control-slider .ant-slider {
+  margin: 0;
+}
+
+.settings-control-slider .ant-slider-track {
+  background: #1890ff;
+  height: 4px;
+}
+
+.settings-control-slider .ant-slider-rail {
+  background: #e8e8e8;
+  height: 4px;
+}
+
+.settings-control-slider .ant-slider-handle::after {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* 信息提示卡片 */
+.settings-info-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.info-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.info-content {
+  flex: 1;
+}
+
+.info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.info-description {
+  font-size: 13px;
+  color: #595959;
+  line-height: 1.6;
+}
+
+/* 抽屉动画优化 */
+.agent-settings-drawer .ant-drawer-content-wrapper {
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .agent-settings-drawer .ant-drawer-content-wrapper {
+    width: 100% !important;
+  }
+
+  .settings-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .settings-control-slider {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .mode-select {
+    width: 100% !important;
+  }
+}

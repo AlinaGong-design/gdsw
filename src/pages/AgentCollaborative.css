@@ -1,0 +1,345 @@
+.agent-collaborative-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+/* 顶部导航栏 */
+.collaborative-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  height: 64px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.auto-save-text {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* 主体内容 */
+.collaborative-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 左侧配置面板 */
+.config-panel {
+  width: 450px;
+  /* flex-shrink: 0; */
+  background: #fff;
+  border-right: 1px solid #e8e8e8;
+  overflow-y: auto;
+  padding: 20px 0;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  padding: 0 20px 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.config-collapse {
+  background: transparent;
+}
+
+.config-collapse .ant-collapse-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.config-collapse .ant-collapse-header {
+  padding: 16px 20px !important;
+  font-weight: 500;
+  color: #262626;
+}
+
+.config-collapse .ant-collapse-content-box {
+  padding: 0 !important;
+}
+
+.config-section {
+  padding: 16px 20px;
+}
+
+.config-item {
+  margin-bottom: 16px;
+}
+
+.config-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #595959;
+}
+
+.app-icon-input {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-icon-preview {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.suggested-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.question-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* 中间Agent配置面板 */
+.agent-config-panel {
+  min-width: 420px;
+  background: #fff;
+  overflow-y: auto;
+  padding: 20px;
+  margin: 0 1px;
+}
+
+.main-agent-section,
+.sub-agents-section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 16px;
+}
+
+.agent-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+}
+
+.agent-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+.main-agent-card {
+  background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 100%);
+}
+
+.agent-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.agent-info {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.agent-details {
+  flex: 1;
+}
+
+.agent-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.agent-desc {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.5;
+}
+
+.agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-config-item {
+  margin-bottom: 16px;
+}
+
+.config-item-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #595959;
+  font-weight: 500;
+}
+
+.sub-agents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sub-agent-card {
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.sub-agent-card:hover {
+  background: #fff;
+}
+
+/* 右侧预览面板 */
+.preview-panel {
+  width: 360px;
+  flex-grow: 1;
+  flex-shrink: 0;
+  background: #fff;
+  border-left: 1px solid #e8e8e8;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px;
+}
+
+.app-preview-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.app-preview-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+  text-align: center;
+}
+
+.chat-input-wrapper {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.usage-limit-text {
+  font-size: 11px;
+  color: #bfbfbf;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+/* 添加Agent弹窗 */
+.add-agent-modal-content {
+
+}
+
+.available-agents-list {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+/* 滚动条样式 */
+.config-panel::-webkit-scrollbar,
+.agent-config-panel::-webkit-scrollbar,
+.preview-panel::-webkit-scrollbar,
+.available-agents-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.config-panel::-webkit-scrollbar-thumb,
+.agent-config-panel::-webkit-scrollbar-thumb,
+.preview-panel::-webkit-scrollbar-thumb,
+.available-agents-list::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.config-panel::-webkit-scrollbar-thumb:hover,
+.agent-config-panel::-webkit-scrollbar-thumb:hover,
+.preview-panel::-webkit-scrollbar-thumb:hover,
+.available-agents-list::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* 响应式适配 */
+/* @media (max-width: 1400px) {
+  .config-panel {
+    width: 480px;
+  }
+
+  .preview-panel {
+    width: 420px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .preview-panel {
+    display: none;
+  }
+} */

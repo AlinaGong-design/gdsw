@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill技能管理模块 - 设计文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+                         'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 60px 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 32px;
+            color: #667eea;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            font-weight: 600;
+        }
+
+        .subsection-title {
+            font-size: 24px;
+            color: #764ba2;
+            margin: 30px 0 20px 0;
+            font-weight: 600;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .mockup {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            font-family: 'Courier New', monospace;
+            margin: 25px 0;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .flow-diagram {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .flow-step-number {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .flow-step-content {
+            flex: 1;
+        }
+
+        .flow-step-content h4 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .flow-step-content p {
+            color: #666;
+            margin: 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table th {
+            padding: 18px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .data-table td {
+            padding: 15px 18px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag-api { background: #e3f2fd; color: #1976d2; }
+        .tag-function { background: #f3e5f5; color: #7b1fa2; }
+        .tag-knowledge { background: #e8f5e9; color: #388e3c; }
+        .tag-draft { background: #fff3e0; color: #f57c00; }
+        .tag-published { background: #e8f5e9; color: #2e7d32; }
+        .tag-archived { background: #fce4ec; color: #c2185b; }
+
+        .highlight {
+            background: linear-gradient(120deg, #ffd89b 0%, #19547b 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 25px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .number { color: #d19a66; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+
+        .alert {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            border-left: 5px solid;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+
+        .alert-warning {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .content { padding: 30px 20px; }
+            .section-title { font-size: 26px; }
+            .feature-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Skill 技能管理模块</h1>
+            <p>智能体群组协作系统 - 核心功能设计文档</p>
+        </div>
+
+        <div class="content">
+            <!-- 概述部分 -->
+            <section class="section">
+                <h2 class="section-title">一、模块概述</h2>
+                <p>
+                    <strong class="highlight">Skill技能管理模块</strong>是智能体能力扩展的核心系统。通过插件化的Skill设计，
+                    智能体可以调用外部API、执行特定函数、检索知识库等，极大增强了AI的实用价值。
+                </p>
+
+                <div class="alert alert-info">
+                    <strong>💡 核心理念</strong><br>
+                    Skill就像智能体的"工具箱"，每个Skill代表一种特定能力。智能体通过组合不同的Skill，
+                    可以完成从数据分析、内容创作到业务集成的各类任务。
+                </div>
+            </section>
+
+            <!-- 核心功能 -->
+            <section class="section">
+                <h2 class="section-title">二、核心功能</h2>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>📋 技能列表展示</h3>
+                        <p>卡片式网格布局，直观展示所有技能。支持按状态筛选（已发布/草稿/下架），
+                        实时搜索快速定位目标技能。</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>✏️ 技能创建与编辑</h3>
+                        <p>可视化编辑器支持三种技能类型配置：API调用、函数工具、知识库。
+                        内置JSON Schema编辑器，规范参数定义。</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🧪 在线测试功能</h3>
+                        <p>编辑器内置测试模块，输入测试数据即可实时验证技能效果。
+                        支持查看请求/响应日志，快速调试。</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🔄 状态生命周期管理</h3>
+                        <p>草稿 → 已发布 → 下架的完整流程。已发布技能可被智能体关联使用，
+                        下架后不影响已关联智能体。</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>📊 使用统计</h3>
+                        <p>实时统计技能被多少智能体使用，帮助管理员了解热门技能，
+                        优化技能库资源配置。</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🔗 智能体关联</h3>
+                        <p>在智能体配置页面，通过Drawer侧边栏选择已发布的技能。
+                        支持多选，灵活组合智能体能力。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 技能类型 -->
+            <section class="section">
+                <h2 class="section-title">三、技能类型详解</h2>
+
+                <h3 class="subsection-title">3.1 API调用类型</h3>
+                <p>
+                    允许智能体调用外部HTTP API，实现与第三方服务的集成。
+                    适用场景：天气查询、数据获取、业务系统对接等。
+                </p>
+
+                <div class="mockup">┌──────────────────────────────────────┐
+│  API调用配置                          │
+├──────────────────────────────────────┤
+│  接口地址: https://api.example.com/v1│
+│  请求方法: [POST ▼]                  │
+│                                      │
+│  请求参数 (JSON Schema):             │
+│  {                                   │
+│    "type": "object",                 │
+│    "properties": {                   │
+│      "query": {                      │
+│        "type": "string",             │
+│        "description": "查询关键词"   │
+│      }                               │
+│    },                                │
+│    "required": ["query"]             │
+│  }                                   │
+│                                      │
+│  返回格式:                           │
+│  {                                   │
+│    "type": "object",                 │
+│    "properties": {                   │
+│      "result": { "type": "string" }  │
+│    }                                 │
+│  }                                   │
+└──────────────────────────────────────┘</div>
+
+                <h3 class="subsection-title">3.2 函数工具类型</h3>
+                <p>
+                    支持自定义JavaScript/Python函数，处理复杂的业务逻辑。
+                    适用场景：数据计算、格式转换、复杂规则判断等。
+                </p>
+
+                <div class="code-block"><span class="keyword">function</span> <span class="string">calculateDiscount</span>(orderAmount, userLevel) {
+  <span class="comment">// 根据订单金额和用户等级计算折扣</span>
+  <span class="keyword">const</span> discountRates = {
+    <span class="string">'vip'</span>: <span class="number">0.8</span>,
+    <span class="string">'gold'</span>: <span class="number">0.9</span>,
+    <span class="string">'normal'</span>: <span class="number">0.95</span>
+  };
+
+  <span class="keyword">return</span> orderAmount * (discountRates[userLevel] || <span class="number">1</span>);
+}</div>
+
+                <h3 class="subsection-title">3.3 知识库类型</h3>
+                <p>
+                    关联向量化的文档库，支持语义检索。智能体可以从大量文档中快速找到相关信息。
+                    适用场景：企业文档问答、产品手册查询、政策法规检索等。
+                </p>
+
+                <div class="alert alert-success">
+                    <strong>✅ 技术实现</strong><br>
+                    使用向量嵌入（Embedding）技术将文档转为向量存储，通过余弦相似度检索Top-K相关片段，
+                    结合大语言模型生成最终答案（RAG架构）。
+                </div>
+            </section>
+
+            <!-- 页面设计 -->
+            <section class="section">
+                <h2 class="section-title">四、页面设计</h2>
+
+                <h3 class="subsection-title">4.1 技能列表页</h3>
+                <div class="mockup">┌──────────────────────────────────────────────┐
+│  技能管理                                     │
+│  [+ 新建技能]    [搜索框]  [状态筛选 ▼]      │
+├──────────────────────────────────────────────┤
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
+│  │ 📊 数据分析│  │ ✍️ 文案生成│  │ 🌤️ 天气查询│ │
+│  │          │  │          │  │          │ │
+│  │类别: 分析│  │类别: 创作│  │类别: 查询│ │
+│  │已发布    │  │草稿      │  │已发布    │ │
+│  │被3个智能体│  │被0个智能体│  │被1个智能体│ │
+│  │使用      │  │使用      │  │使用      │ │
+│  │          │  │          │  │          │ │
+│  │[编辑][删除]│  │[编辑][发布]│  │[编辑][删除]│ │
+│  └──────────┘  └──────────┘  └──────────┘ │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
+│  │ 💹 股票分析│  │ 📈 图表生成│  │ 🔍 网页搜索│ │
+│  │ ...      │  │ ...      │  │ ...      │ │
+│  └──────────┘  └──────────┘  └──────────┘ │
+└──────────────────────────────────────────────┘</div>
+
+                <h3 class="subsection-title">4.2 技能编辑器</h3>
+                <div class="mockup">┌──────────────────────────────────────┐
+│  技能编辑器                           │
+├──────────────────────────────────────┤
+│  基础信息                             │
+│  名称: [数据分析助手_______________] │
+│  图标: [📊]                          │
+│  类别: [数据处理 ▼]                  │
+│  描述: [对结构化数据进行分析统计___] │
+│                                      │
+│  技能类型                             │
+│  ● API调用  ○ 函数工具  ○ 知识库    │
+│                                      │
+│  [展开API配置区域...]                │
+│                                      │
+│  使用示例                             │
+│  ┌──────────────────────────────┐  │
+│  │输入: "分析这个月的销售数据"   │  │
+│  │输出: "本月销售额100万元，     │  │
+│  │      环比增长15%..."          │  │
+│  └──────────────────────────────┘  │
+│                                      │
+│  [🧪 测试技能]                       │
+│                                      │
+│  状态: [已发布 ▼]                    │
+│                                      │
+│       [取消]        [保存]           │
+└──────────────────────────────────────┘</div>
+            </section>
+
+            <!-- 业务流程 -->
+            <section class="section">
+                <h2 class="section-title">五、业务流程</h2>
+
+                <div class="flow-diagram">
+                    <h3 style="color: #667eea; margin-bottom: 20px;">技能创建与发布流程</h3>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">1</div>
+                        <div class="flow-step-content">
+                            <h4>填写基础信息</h4>
+                            <p>输入技能名称、选择图标、设置类别和描述</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">2</div>
+                        <div class="flow-step-content">
+                            <h4>选择技能类型</h4>
+                            <p>根据业务需求选择：API调用、函数工具或知识库</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">3</div>
+                        <div class="flow-step-content">
+                            <h4>配置技能参数</h4>
+                            <p>API类型：配置接口地址、请求方法、参数Schema<br>
+                               函数类型：编写函数代码<br>
+                               知识库类型：关联文档并配置检索参数</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">4</div>
+                        <div class="flow-step-content">
+                            <h4>添加使用示例</h4>
+                            <p>提供输入输出示例，帮助理解技能用途</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">5</div>
+                        <div class="flow-step-content">
+                            <h4>��试验证</h4>
+                            <p>输入测试数据，调用技能接口，检查返回结果是否符合预期</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">6</div>
+                        <div class="flow-step-content">
+                            <h4>发布技能</h4>
+                            <p>设置状态为"已发布"，技能进入可用库，可被智能体关联</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>⚠️ 注意事项</strong><br>
+                    • 草稿状态的技能无法被智能体使用<br>
+                    • 已被智能体使用的技能删除时会显示警告<br>
+                    • 下架的技能不会影响已关联的智能体，但不可被新智能体选择
+                </div>
+            </section>
+
+            <!-- 数据结构 -->
+            <section class="section">
+                <h2 class="section-title">六、数据结构</h2>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>字段名</th>
+                            <th>类型</th>
+                            <th>说明</th>
+                            <th>必填</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>string</td>
+                            <td>技能唯一标识</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>name</code></td>
+                            <td>string</td>
+                            <td>技能名称</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>icon</code></td>
+                            <td>string</td>
+                            <td>emoji图标</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>category</code></td>
+                            <td>string</td>
+                            <td>技能类别（数据处理/内容创作/分析洞察/外部集成）</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>description</code></td>
+                            <td>string</td>
+                            <td>技能描述</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>type</code></td>
+                            <td>enum</td>
+                            <td>'api' | 'function' | 'knowledge'</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>config</code></td>
+                            <td>object</td>
+                            <td>技能配置（根据type不同而变化）</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>status</code></td>
+                            <td>enum</td>
+                            <td>'draft' | 'published' | 'archived'</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>usageCount</code></td>
+                            <td>number</td>
+                            <td>被多少个智能体使用</td>
+                            <td>❌</td>
+                        </tr>
+                        <tr>
+                            <td><code>createdAt</code></td>
+                            <td>Date</td>
+                            <td>创建时间</td>
+                            <td>✅</td>
+                        </tr>
+                        <tr>
+                            <td><code>updatedAt</code></td>
+                            <td>Date</td>
+                            <td>更新时间</td>
+                            <td>✅</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="subsection-title">Config字段详解</h3>
+
+                <div class="code-block"><span class="comment">// API类型的config</span>
+{
+  <span class="string">"endpoint"</span>: <span class="string">"https://api.example.com/v1/analyze"</span>,
+  <span class="string">"method"</span>: <span class="string">"POST"</span>,
+  <span class="string">"headers"</span>: {
+    <span class="string">"Content-Type"</span>: <span class="string">"application/json"</span>,
+    <span class="string">"Authorization"</span>: <span class="string">"Bearer ${API_KEY}"</span>
+  },
+  <span class="string">"parameters"</span>: { <span class="comment">/* JSON Schema */</span> },
+  <span class="string">"response"</span>: { <span class="comment">/* JSON Schema */</span> }
+}
+
+<span class="comment">// 函数类型的config</span>
+{
+  <span class="string">"language"</span>: <span class="string">"javascript"</span>,
+  <span class="string">"code"</span>: <span class="string">"function execute(input) { ... }"</span>,
+  <span class="string">"inputSchema"</span>: { <span class="comment">/* JSON Schema */</span> },
+  <span class="string">"outputSchema"</span>: { <span class="comment">/* JSON Schema */</span> }
+}
+
+<span class="comment">// 知识库类型的config</span>
+{
+  <span class="string">"knowledgeBaseId"</span>: <span class="string">"kb_123456"</span>,
+  <span class="string">"retrievalConfig"</span>: {
+    <span class="string">"topK"</span>: <span class="number">5</span>,
+    <span class="string">"minScore"</span>: <span class="number">0.7</span>
+  }
+}</div>
+            </section>
+
+            <!-- 状态管理 -->
+            <section class="section">
+                <h2 class="section-title">七、状态管理</h2>
+
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 30px 0;">
+                    <div style="flex: 1; min-width: 250px; padding: 25px; background: #fff3e0; border-radius: 10px; border-left: 5px solid #ff9800;">
+                        <h3 style="color: #f57c00; margin-bottom: 10px;">📝 草稿 (draft)</h3>
+                        <p style="color: #666; margin: 0;">
+                            编辑中的技能，未通过测试或未完成配置。<br>
+                            <strong>限制</strong>：无法被智能体选择关联。
+                        </p>
+                    </div>
+
+                    <div style="flex: 1; min-width: 250px; padding: 25px; background: #e8f5e9; border-radius: 10px; border-left: 5px solid #4caf50;">
+                        <h3 style="color: #2e7d32; margin-bottom: 10px;">✅ 已发布 (published)</h3>
+                        <p style="color: #666; margin: 0;">
+                            已完成配置并通过测试的技能。<br>
+                            <strong>可用</strong>：智能体可以选择并使用此技能。
+                        </p>
+                    </div>
+
+                    <div style="flex: 1; min-width: 250px; padding: 25px; background: #fce4ec; border-radius: 10px; border-left: 5px solid #e91e63;">
+                        <h3 style="color: #c2185b; margin-bottom: 10px;">🗄️ 下架 (archived)</h3>
+                        <p style="color: #666; margin: 0;">
+                            不再推荐使用的技能。<br>
+                            <strong>说明</strong>：已关联的智能体仍可使用，但不可被新智能体选择。
+                        </p>
+                    </div>
+                </div>
+
+                <h3 class="subsection-title">状态流转规则</h3>
+                <div class="mockup">草稿 (draft)
+  ↓
+  │ 配置完成并测试通��
+  ↓
+已发布 (published)
+  ↓
+  │ 管理员主动下架
+  ↓
+下架 (archived)
+  ↓
+  │ 重新启用
+  ↓
+已发布 (published)</div>
+            </section>
+
+            <!-- 技能调用流程 -->
+            <section class="section">
+                <h2 class="section-title">八、技能调用流程</h2>
+
+                <div class="flow-diagram">
+                    <h3 style="color: #667eea; margin-bottom: 20px;">智能体调用Skill的完整流程</h3>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">1</div>
+                        <div class="flow-step-content">
+                            <h4>用户发送任务请求</h4>
+                            <p>用户在聊天界面向智能体提出需求，例如："帮我分析这份销售数据"</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">2</div>
+                        <div class="flow-step-content">
+                            <h4>智能体判断是否需要技能</h4>
+                            <p>AI分析任务需求，判断是否需要调用特定技能完成任务</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">3</div>
+                        <div class="flow-step-content">
+                            <h4>查询可用技能列表</h4>
+                            <p>从智能体关联的技能列表中，匹配最合适的技能</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">4</div>
+                        <div class="flow-step-content">
+                            <h4>准备调用参数</h4>
+                            <p>根据技能的参数Schema，从用户输入中提取所需参数</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">5</div>
+                        <div class="flow-step-content">
+                            <h4>执行技能</h4>
+                            <p>• API类型：发送HTTP请求到指定接口<br>
+                               • 函数类型：执行函数代码<br>
+                               • 知识库类型：检索相关文档片段</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">6</div>
+                        <div class="flow-step-content">
+                            <h4>获取技能返回结果</h4>
+                            <p>接收技能执行的结果数据</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">7</div>
+                        <div class="flow-step-content">
+                            <h4>AI生成最终回复</h4>
+                            <p>将技能返回的数据结合AI的理解能力，生成自然语言回复</p>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">8</div>
+                        <div class="flow-step-content">
+                            <h4>展示给用户</h4>
+                            <p>在聊天界面显示最终的回复内容</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 使用场景 -->
+            <section class="section">
+                <h2 class="section-title">九、典型使用场景</h2>
+
+                <div class="feature-grid">
+                    <div class="feature-card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);">
+                        <h3>📊 数据分析场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: API调用<br>
+                            <strong>示例</strong>: "数据分析助手"技能<br>
+                            <strong>功能</strong>: 调用数据平台API，获取销售、用户等数据，生成分析报告
+                        </p>
+                    </div>
+
+                    <div class="feature-card" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);">
+                        <h3>✍️ 内容创作场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: 函数工具<br>
+                            <strong>示例</strong>: "文案生成器"技能<br>
+                            <strong>功能</strong>: 根据品牌调性、关键词等参数，自动生成营销文案
+                        </p>
+                    </div>
+
+                    <div class="feature-card" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);">
+                        <h3>📚 知识问答场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: 知识库<br>
+                            <strong>示例</strong>: "企业文档助手"技能<br>
+                            <strong>功能</strong>: 从公司内部文档库检索相关内容，回答员工问题
+                        </p>
+                    </div>
+
+                    <div class="feature-card" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);">
+                        <h3>🌐 外部集成场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: API调用<br>
+                            <strong>示例</strong>: "天气查询"技能<br>
+                            <strong>功能</strong>: 调用天气API，实时获取指定城市的天气信息
+                        </p>
+                    </div>
+
+                    <div class="feature-card" style="background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);">
+                        <h3>🧮 业务计算场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: 函数工具<br>
+                            <strong>示例</strong>: "折扣计算器"技能<br>
+                            <strong>功能</strong>: 根据复杂的业务规则（会员等级、促销活动等）计算最终价格
+                        </p>
+                    </div>
+
+                    <div class="feature-card" style="background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);">
+                        <h3>🔍 信息检索场景</h3>
+                        <p>
+                            <strong>技能类型</strong>: API调用<br>
+                            <strong>示例</strong>: "网页搜索"技能<br>
+                            <strong>功能</strong>: 调用搜索引擎API，获取实时网络信息
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 最佳实践 -->
+            <section class="section">
+                <h2 class="section-title">十、最佳实践</h2>
+
+                <div class="alert alert-info">
+                    <strong>💡 设计建议</strong>
+                </div>
+
+                <div style="margin: 25px 0;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">1. 技能粒度控制</h4>
+                    <p style="margin-left: 20px; color: #666;">
+                        ✅ 推荐：一个技能完成一个明确的功能（单一职责原则）<br>
+                        ❌ 避免：一个技能包含多个不相关的功能，增加维护成本
+                    </p>
+                </div>
+
+                <div style="margin: 25px 0;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">2. 参数设计规范</h4>
+                    <p style="margin-left: 20px; color: #666;">
+                        • 使用JSON Schema严格定义参数类型<br>
+                        • 为每个参数添加清晰的description<br>
+                        • 合理设置required字段，避免过多必填项
+                    </p>
+                </div>
+
+                <div style="margin: 25px 0;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">3. 错误处理</h4>
+                    <p style="margin-left: 20px; color: #666;">
+                        • API调用失败时返回友好的错误信息<br>
+                        • 设置合理的超时时间<br>
+                        • 关键技能建议配置重试机制
+                    </p>
+                </div>
+
+                <div style="margin: 25px 0;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">4. 性能优化</h4>
+                    <p style="margin-left: 20px; color: #666;">
+                        • 对高频调用的API结果进行缓存<br>
+                        • 知识库检索结果设置合理的topK值<br>
+                        • 函数工具避免耗时过长的同步操作
+                    </p>
+                </div>
+
+                <div style="margin: 25px 0;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">5. 安全性考虑</h4>
+                    <p style="margin-left: 20px; color: #666;">
+                        • API Key等敏感信息使用环境变量存储<br>
+                        • 对外部API的返回数据进行校验<br>
+                        • 函数工具代码执行在沙箱环境中
+                    </p>
+                </div>
+            </section>
+
+            <!-- 技术实现 -->
+            <section class="section">
+                <h2 class="section-title">十一、技术实现要点</h2>
+
+                <h3 class="subsection-title">前端实现</h3>
+                <ul style="margin-left: 25px; color: #666; line-height: 2;">
+                    <li>基于 <strong>Ant Design</strong> 的Form组件构建编辑器</li>
+                    <li>使用 <strong>Monaco Editor</strong> 实现JSON Schema编辑</li>
+                    <li>卡片网格布局使用 <strong>CSS Grid</strong> 实现响应式</li>
+                    <li>状态管理使用 <strong>Zustand</strong> 或 <strong>Redux</strong></li>
+                </ul>
+
+                <h3 class="subsection-title">后端实现</h3>
+                <ul style="margin-left: 25px; color: #666; line-height: 2;">
+                    <li>API调用使用 <strong>axios</strong> 或 <strong>fetch</strong></li>
+                    <li>函数工具在 <strong>VM2</strong> 沙箱环境中执行</li>
+                    <li>知识库使用 <strong>Pinecone</strong> / <strong>Qdrant</strong> 向量数据库</li>
+                    <li>技能配置存储在 <strong>PostgreSQL</strong> / <strong>MongoDB</strong></li>
+                </ul>
+            </section>
+        </div>
+
+        <div class="footer">
+            <p><strong>智能体群组协作系统 - Skill技能管理模块</strong></p>
+            <p style="margin-top: 10px; font-size: 14px;">
+                文档版本: v1.0 | 最后更新: 2026-01-26
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 添加平滑滚动效果
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // 添加代码块复制功能
+        document.querySelectorAll('.code-block').forEach(block => {
+            block.style.position = 'relative';
+            const button = document.createElement('button');
+            button.textContent = '复制';
+            button.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                padding: 5px 12px;
+                background: #667eea;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+            `;
+            button.onclick = () => {
+                navigator.clipboard.writeText(block.textContent);
+                button.textContent = '已复制!';
+                setTimeout(() => button.textContent = '复制', 2000);
+            };
+            block.appendChild(button);
+        });
+    </script>
+</body>
+</html>

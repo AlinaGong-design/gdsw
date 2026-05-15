@@ -1,0 +1,41 @@
+.floating-card {
+  animation: float 3s ease-in-out infinite;
+}
+
+.floating-card:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.floating-card:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.floating-card:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.floating-card:nth-child(4) {
+  animation-delay: 1.5s;
+}
+
+.floating-card:nth-child(5) {
+  animation-delay: 2s;
+}
+
+.floating-card:nth-child(6) {
+  animation-delay: 2.5s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.floating-card:hover {
+  transform: scale(1.1) translateY(-5px) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18) !important;
+}

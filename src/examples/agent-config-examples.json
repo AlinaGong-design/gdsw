@@ -1,0 +1,176 @@
+{
+  "$schema": "Dify智能体模式配置示例",
+  "description": "包含React模式和Function Call模式的完整配置示例",
+
+  "examples": [
+    {
+      "name": "React模式 - 客服智能体",
+      "description": "用于客户服务的对话交互智能体，配置了多个技能",
+      "config": {
+        "agent_id": "agent_001",
+        "agent_name": "客服助手",
+        "description": "为用户提供7x24小时在线客服支持",
+        "mode": "react",
+        "config": {
+          "skills": [
+            "skill_knowledge_base_faq",
+            "skill_order_query",
+            "skill_refund_processing"
+          ]
+        },
+        "created_at": "2026-01-30T10:00:00Z",
+        "updated_at": "2026-01-30T10:00:00Z"
+      }
+    },
+
+    {
+      "name": "React模式 - 数据分析智能体",
+      "description": "用于数据分析和报表生成的智能体",
+      "config": {
+        "agent_id": "agent_002",
+        "agent_name": "数据分析助手",
+        "description": "帮助用户分析业务数据并生成报表",
+        "mode": "react",
+        "config": {
+          "skills": [
+            "skill_data_query",
+            "skill_chart_generation",
+            "skill_report_export"
+          ]
+        },
+        "created_at": "2026-01-30T11:00:00Z",
+        "updated_at": "2026-01-30T11:00:00Z"
+      }
+    },
+
+    {
+      "name": "Function Call模式 - API自动化调用",
+      "description": "用于系统间自动化API调用，默认迭代次数",
+      "config": {
+        "agent_id": "agent_003",
+        "agent_name": "API自动化调用器",
+        "description": "自动调用第三方API完成数据同步任务",
+        "mode": "function_call",
+        "config": {
+          "max_iteration_times": 10
+        },
+        "created_at": "2026-01-30T12:00:00Z",
+        "updated_at": "2026-01-30T12:00:00Z"
+      }
+    },
+
+    {
+      "name": "Function Call模式 - 复杂任务处理",
+      "description": "用于复杂任务处理，增加迭代次数以支持更多步骤",
+      "config": {
+        "agent_id": "agent_004",
+        "agent_name": "复杂任务处理器",
+        "description": "处理需要多次函数调用的复杂任务",
+        "mode": "function_call",
+        "config": {
+          "max_iteration_times": 15
+        },
+        "created_at": "2026-01-30T13:00:00Z",
+        "updated_at": "2026-01-30T13:00:00Z"
+      }
+    },
+
+    {
+      "name": "Function Call模式 - 轻量级任务",
+      "description": "用于简单快速的函数调用任务",
+      "config": {
+        "agent_id": "agent_005",
+        "agent_name": "轻量级任务执行器",
+        "description": "快速执行简单的函数调用任务",
+        "mode": "function_call",
+        "config": {
+          "max_iteration_times": 5
+        },
+        "created_at": "2026-01-30T14:00:00Z",
+        "updated_at": "2026-01-30T14:00:00Z"
+      }
+    }
+  ],
+
+  "validation_rules": {
+    "description": "配置验证规则说明",
+    "rules": [
+      {
+        "field": "mode",
+        "type": "enum",
+        "allowed_values": ["react", "function_call"],
+        "required": true,
+        "description": "智能体运行模式，必须为react或function_call"
+      },
+      {
+        "field": "config.skills",
+        "type": "array<string>",
+        "required": false,
+        "applicable_modes": ["react"],
+        "restrictions": ["仅在React模式下可配置", "Function Call模式下设置会触发验证错误"],
+        "description": "技能ID列表，仅React模式支持"
+      },
+      {
+        "field": "config.max_iteration_times",
+        "type": "number",
+        "required": true,
+        "applicable_modes": ["function_call"],
+        "constraints": {
+          "minimum": 1,
+          "maximum": 20,
+          "default": 10,
+          "type": "integer"
+        },
+        "restrictions": ["仅在Function Call模式下可配置", "React模式下设置会触发验证错误"],
+        "description": "最大迭代次数，控制智能体思考-调用函数的循环次数上限"
+      }
+    ]
+  },
+
+  "error_examples": [
+    {
+      "scenario": "在Function Call模式下配置Skills",
+      "invalid_config": {
+        "mode": "function_call",
+        "config": {
+          "skills": ["skill_001"],
+          "max_iteration_times": 10
+        }
+      },
+      "error": {
+        "field": "skills",
+        "message": "函数调用模式不支持配置技能",
+        "code": "SKILLS_NOT_ALLOWED"
+      }
+    },
+    {
+      "scenario": "max_iteration_times超出范围",
+      "invalid_config": {
+        "mode": "function_call",
+        "config": {
+          "max_iteration_times": 25
+        }
+      },
+      "error": {
+        "field": "max_iteration_times",
+        "message": "最大迭代次数不能大于 20",
+        "code": "MAX_ITERATION_TOO_HIGH"
+      }
+    },
+    {
+      "scenario": "在React模式下配置max_iteration_times",
+      "invalid_config": {
+        "mode": "react",
+        "config": {
+          "skills": ["skill_001"],
+          "max_iteration_times": 10
+        }
+      },
+      "error": {
+        "field": "max_iteration_times",
+        "message": "React模式不支持配置最大迭代次数",
+        "code": "MAX_ITERATION_NOT_ALLOWED"
+      }
+    }
+  ]
+}

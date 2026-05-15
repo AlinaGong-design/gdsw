@@ -1,0 +1,47 @@
+.agent-list-container {
+  padding: 24px;
+  background: #fff;
+  min-height: 100vh;
+}
+
+.agent-list-filters {
+  margin-bottom: 20px;
+}
+
+/* 表格样式优化 */
+.agent-list-container .ant-table {
+  background: #fff;
+  border-radius: 8px;
+}
+
+.agent-list-container .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.agent-list-container .ant-table-tbody > tr:hover > td {
+  background: #f5f7fa;
+}
+
+/* 按钮样式 */
+.agent-list-container .ant-btn-link {
+  padding: 0 8px;
+}
+
+/* Agent类型选择卡片 */
+.agent-list-container .ant-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 2px solid #f0f0f0;
+}
+
+.agent-list-container .ant-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.agent-list-container .ant-card .ant-card-body {
+  padding: 0;
+}
