@@ -11,8 +11,7 @@ import {
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
 type CircuitStatus = 'normal' | 'warning' | 'throttled' | 'stopped';
-type FenceTab = 'ip' | 'api' | 'topic' | 'knowledge';
-type MainTab = 'overview' | 'logs' | 'behavior' | 'sensitive' | 'fence';
+type MainTab = 'overview' | 'logs' | 'behavior' | 'sensitive';
 type LogSubTab = 'session' | 'tool' | 'audit';
 
 interface AlertEvent {
@@ -33,11 +32,6 @@ interface SensitiveWordGroup {
   category: '政治敏感' | '竞品保护' | '个人隐私' | '财务数据' | '自定义';
   action: 'block' | 'flag' | 'replace';
   words: string[]; hitCount7d: number; enabled: boolean;
-}
-interface FenceConfig {
-  employeeId: string; employeeName: string;
-  ipWhitelist: string[]; ipBlacklist: string[];
-  allowedApis: string[]; topicBlacklist: string[]; knowledgeScopes: string[];
 }
 interface SessionLog {
   id: string; employeeName: string; userId: string; dept: string;
@@ -76,10 +70,6 @@ const MOCK_WORDS: SensitiveWordGroup[] = [
   { id: 'wg-003', name: '竞品保护', category: '竞品保护', action: 'flag', words: ['竞品A', '竞品B', '友商C', '对标产品'], hitCount7d: 8, enabled: true },
   { id: 'wg-004', name: '财务数据防泄漏', category: '财务数据', action: 'block', words: ['内部成本', '未公开营收', '融资金额', '薪酬体系'], hitCount7d: 12, enabled: true },
   { id: 'wg-005', name: '自定义业务词库', category: '自定义', action: 'flag', words: ['内部项目代号', '保密合同编号'], hitCount7d: 3, enabled: false },
-];
-const MOCK_FENCES: FenceConfig[] = [
-  { employeeId: 'de-001', employeeName: '法务合规助手', ipWhitelist: ['10.0.0.0/8', '172.16.0.0/12'], ipBlacklist: [], allowedApis: ['law_db_search', 'pdf_parser', 'feishu_push'], topicBlacklist: ['竞品价格', '员工薪资', '股权结构'], knowledgeScopes: ['法律法规库', '公司制度手册'] },
-  { employeeId: 'de-009', employeeName: '合同审核助手', ipWhitelist: ['10.0.0.0/8'], ipBlacklist: [], allowedApis: ['pdf_parser', 'law_db_search', 'contract_risk_check'], topicBlacklist: ['股权', '内部薪酬', '政治'], knowledgeScopes: ['合同模板库', '法律法规库'] },
 ];
 const MOCK_SESSIONS: SessionLog[] = [
   { id: 's-001', employeeName: '合同审核助手', userId: 'usr_zhangsan', dept: '法务部', startAt: '2026-04-22 09:38', duration: '12m 34s', msgCount: 18, tokens: 14280, status: 'flagged', channel: 'H5网页' },
@@ -189,57 +179,6 @@ const LiveFeed: React.FC = () => {
 
 // ─── Overview Tab ───────────────────────────────────────────────────────────────
 
-// AI Model Data
-const MOCK_MODELS = [
-  { name: 'GLM-4-Plus', provider: '智谱AI', calls: 18420, tokens: 24182000, cost: 1209.10, budget: 2000, color: '#6366F1' },
-  { name: 'DeepSeek-V3', provider: 'DeepSeek', calls: 8140, tokens: 12284000, cost: 368.52, budget: 800, color: '#10B981' },
-  { name: 'Qwen-Max', provider: '阿里云', calls: 4280, tokens: 6421000, cost: 192.63, budget: 400, color: '#F59E0B' },
-];
-
-// Model Call Details (for drill-down)
-interface ModelCallDetail {
-  id: string;
-  modelName: string;
-  employeeName: string;
-  employeeId: string;
-  taskType: string;
-  calledAt: string;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cost: number;
-  latencyMs: number;
-  status: 'success' | 'error';
-}
-
-const MOCK_MODEL_CALLS: Record<string, ModelCallDetail[]> = {
-  'GLM-4-Plus': [
-    { id: 'mc-001', modelName: 'GLM-4-Plus', employeeName: '法务合规助手', employeeId: 'de-001', taskType: '合同条款分析', calledAt: '2026-04-22 10:42:18', inputTokens: 4820, outputTokens: 1240, totalTokens: 6060, cost: 0.30, latencyMs: 2840, status: 'success' },
-    { id: 'mc-002', modelName: 'GLM-4-Plus', employeeName: '合同审核助手', employeeId: 'de-009', taskType: '风险识别', calledAt: '2026-04-22 10:38:42', inputTokens: 3210, outputTokens: 890, totalTokens: 4100, cost: 0.21, latencyMs: 1920, status: 'success' },
-    { id: 'mc-003', modelName: 'GLM-4-Plus', employeeName: 'HR 招聘助手', employeeId: 'de-002', taskType: '简历评估', calledAt: '2026-04-22 10:35:12', inputTokens: 2840, outputTokens: 720, totalTokens: 3560, cost: 0.18, latencyMs: 1650, status: 'success' },
-    { id: 'mc-004', modelName: 'GLM-4-Plus', employeeName: '智能客服分发', employeeId: 'de-005', taskType: '用户咨询回复', calledAt: '2026-04-22 10:32:05', inputTokens: 1820, outputTokens: 420, totalTokens: 2240, cost: 0.11, latencyMs: 980, status: 'success' },
-    { id: 'mc-005', modelName: 'GLM-4-Plus', employeeName: '法务合规助手', employeeId: 'de-001', taskType: '法规检索', calledAt: '2026-04-22 10:28:33', inputTokens: 5240, outputTokens: 1580, totalTokens: 6820, cost: 0.34, latencyMs: 3120, status: 'error' },
-    { id: 'mc-006', modelName: 'GLM-4-Plus', employeeName: '运营数据助手', employeeId: 'de-006', taskType: '数据分析报告', calledAt: '2026-04-22 10:22:18', inputTokens: 6120, outputTokens: 2840, totalTokens: 8960, cost: 0.45, latencyMs: 4280, status: 'success' },
-    { id: 'mc-007', modelName: 'GLM-4-Plus', employeeName: '法务合规助手', employeeId: 'de-001', taskType: '合同起草', calledAt: '2026-04-22 10:18:55', inputTokens: 3580, outputTokens: 2120, totalTokens: 5700, cost: 0.29, latencyMs: 3560, status: 'success' },
-    { id: 'mc-008', modelName: 'GLM-4-Plus', employeeName: '合同审核助手', employeeId: 'de-009', taskType: '条款对比', calledAt: '2026-04-22 10:12:40', inputTokens: 4920, outputTokens: 1680, totalTokens: 6600, cost: 0.33, latencyMs: 2940, status: 'success' },
-  ],
-  'DeepSeek-V3': [
-    { id: 'mc-101', modelName: 'DeepSeek-V3', employeeName: '智能客服分发', employeeId: 'de-005', taskType: '实时问答', calledAt: '2026-04-22 10:45:22', inputTokens: 820, outputTokens: 340, totalTokens: 1160, cost: 0.06, latencyMs: 650, status: 'success' },
-    { id: 'mc-102', modelName: 'DeepSeek-V3', employeeName: '运营数据助手', employeeId: 'de-006', taskType: '趋势预测', calledAt: '2026-04-22 10:40:15', inputTokens: 1520, outputTokens: 680, totalTokens: 2200, cost: 0.11, latencyMs: 1120, status: 'success' },
-    { id: 'mc-103', modelName: 'DeepSeek-V3', employeeName: 'HR 招聘助手', employeeId: 'de-002', taskType: '面试问题生成', calledAt: '2026-04-22 10:35:48', inputTokens: 420, outputTokens: 280, totalTokens: 700, cost: 0.04, latencyMs: 420, status: 'success' },
-    { id: 'mc-104', modelName: 'DeepSeek-V3', employeeName: '智能客服分发', employeeId: 'de-005', taskType: '情感分析', calledAt: '2026-04-22 10:30:12', inputTokens: 620, outputTokens: 180, totalTokens: 800, cost: 0.04, latencyMs: 520, status: 'success' },
-    { id: 'mc-105', modelName: 'DeepSeek-V3', employeeName: '智能客服分发', employeeId: 'de-005', taskType: '知识问答', calledAt: '2026-04-22 10:25:33', inputTokens: 980, outputTokens: 540, totalTokens: 1520, cost: 0.08, latencyMs: 780, status: 'success' },
-    { id: 'mc-106', modelName: 'DeepSeek-V3', employeeName: '运营数据助手', employeeId: 'de-006', taskType: 'SQL生成', calledAt: '2026-04-22 10:18:22', inputTokens: 1240, outputTokens: 420, totalTokens: 1660, cost: 0.08, latencyMs: 890, status: 'success' },
-  ],
-  'Qwen-Max': [
-    { id: 'mc-201', modelName: 'Qwen-Max', employeeName: '智能巡检助手', employeeId: 'de-007', taskType: '异常检测', calledAt: '2026-04-22 10:48:30', inputTokens: 2840, outputTokens: 420, totalTokens: 3260, cost: 0.03, latencyMs: 1850, status: 'success' },
-    { id: 'mc-202', modelName: 'Qwen-Max', employeeName: '运营数据助手', employeeId: 'de-006', taskType: '数据清洗', calledAt: '2026-04-22 10:42:18', inputTokens: 1820, outputTokens: 320, totalTokens: 2140, cost: 0.02, latencyMs: 1240, status: 'success' },
-    { id: 'mc-203', modelName: 'Qwen-Max', employeeName: '智能巡检助手', employeeId: 'de-007', taskType: '日志分析', calledAt: '2026-04-22 10:35:42', inputTokens: 3420, outputTokens: 580, totalTokens: 4000, cost: 0.04, latencyMs: 2180, status: 'success' },
-    { id: 'mc-204', modelName: 'Qwen-Max', employeeName: 'HR 招聘助手', employeeId: 'de-002', taskType: '候选人匹配', calledAt: '2026-04-22 10:28:15', inputTokens: 2140, outputTokens: 680, totalTokens: 2820, cost: 0.03, latencyMs: 1560, status: 'success' },
-    { id: 'mc-205', modelName: 'Qwen-Max', employeeName: '智能巡检助手', employeeId: 'de-007', taskType: '报告生成', calledAt: '2026-04-22 10:20:44', inputTokens: 4280, outputTokens: 1120, totalTokens: 5400, cost: 0.05, latencyMs: 2840, status: 'success' },
-  ],
-};
-
 // P-level Alert Data
 const MOCK_P_ALERTS = [
   { id: 'p0-1', level: 'P0', title: '高频调用异常', desc: '法务合规助手调用量超基线 830%，已触发自动限流', time: '03:01', status: 'active' as const },
@@ -267,99 +206,7 @@ const Sparkline: React.FC<{ values: number[]; color: string; height?: number }> 
   );
 };
 
-// ─── Model Detail Drawer ─────────────────────────────────────────────────────────
-const ModelDetailDrawer: React.FC<{
-  model: typeof MOCK_MODELS[0];
-  calls: ModelCallDetail[];
-  onClose: () => void;
-}> = ({ model, calls, onClose }) => {
-  // 使用model对象的数据作为总览统计
-  const avgLatency = calls.length > 0 ? Math.round(calls.reduce((a, c) => a + c.latencyMs, 0) / calls.length) : 0;
-  const successRate = calls.length > 0 ? Math.round((calls.filter(c => c.status === 'success').length / calls.length) * 100) : 100;
-
-  return (
-    <>
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 299 }} onClick={onClose} />
-      <div style={{
-        position: 'fixed', right: 0, top: 0, bottom: 0, width: 680,
-        background: '#fff', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
-        display: 'flex', flexDirection: 'column', zIndex: 300,
-      }}>
-        {/* Header */}
-        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 4 }}>{model.name} 调用明细</div>
-              <div style={{ fontSize: 11, color: '#9ca3af' }}>{model.provider} · 本月累计数据</div>
-            </div>
-            <div onClick={onClose} style={{ cursor: 'pointer', color: '#bbb', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>✕</div>
-          </div>
-          {/* Stats row - 使用model数据 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-            {[
-              { label: '总成本', value: `¥${model.cost.toFixed(2)}`, color: model.color },
-              { label: '调用次数', value: model.calls.toLocaleString(), color: '#6b7280' },
-              { label: 'Token消耗', value: `${(model.tokens / 1000000).toFixed(2)}M`, color: '#7c3aed' },
-              { label: '成功率', value: `${successRate}%`, color: successRate >= 95 ? '#059669' : '#d97706' },
-            ].map(item => (
-              <div key={item.label} style={{ textAlign: 'center', background: '#fafafa', borderRadius: 8, padding: '8px 6px' }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: item.color }}>{item.value}</div>
-                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{item.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent calls header */}
-        <div style={{ padding: '14px 24px 0', borderBottom: '1px solid #f5f5f5' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', marginBottom: 2 }}>最近调用记录</div>
-          <div style={{ fontSize: 11, color: '#9ca3af', paddingBottom: 10 }}>展示最近 {calls.length} 条调用详情</div>
-        </div>
-
-        {/* Call list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px' }}>
-          {calls.map((call, idx) => (
-            <div key={call.id} style={{
-              padding: '14px 0', borderBottom: idx < calls.length - 1 ? '1px solid #f5f5f5' : 'none',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{
-                    fontSize: 10, padding: '2px 7px', borderRadius: 8, fontWeight: 700,
-                    color: call.status === 'success' ? '#059669' : '#dc2626',
-                    background: call.status === 'success' ? '#ecfdf5' : '#fef2f2',
-                  }}>
-                    {call.status === 'success' ? '✓ 成功' : '✗ 失败'}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>{call.employeeName}</span>
-                  <span style={{ fontSize: 10, color: '#9ca3af' }}>· {call.taskType}</span>
-                </div>
-                <span style={{ fontSize: 10, color: '#bbb' }}>{call.calledAt}</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-                {[
-                  { label: '输入 Token', value: call.inputTokens.toLocaleString() },
-                  { label: '输出 Token', value: call.outputTokens.toLocaleString() },
-                  { label: '总 Token', value: call.totalTokens.toLocaleString() },
-                  { label: '成本', value: `¥${call.cost.toFixed(2)}` },
-                  { label: '延迟', value: `${call.latencyMs}ms` },
-                ].map(item => (
-                  <div key={item.label} style={{ background: '#f8f8f8', borderRadius: 6, padding: '6px 8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#333' }}>{item.value}</div>
-                    <div style={{ fontSize: 9, color: '#9ca3af', marginTop: 1 }}>{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-};
-
 const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; onResolve: (id: string) => void; onCircuit: (name: string, act: string) => void; onNavigate: (tab: MainTab) => void }> = ({ alerts, metrics, onResolve, onCircuit, onNavigate }) => {
-  const [selectedModel, setSelectedModel] = useState<typeof MOCK_MODELS[0] | null>(null);
   const [dept, setDept] = useState('all');
   const [timeRange, setTimeRange] = useState('7d');
   const [dateStart, setDateStart] = useState('');
@@ -377,7 +224,6 @@ const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; o
 
   const totalBlocked = Math.round(metrics.reduce((a, m) => a + m.sensitiveHits, 0) * blockedMultiplier);
   const totalTodayTokens = Math.round(metrics.reduce((a, m) => a + m.todayTokens, 0) * timeMultiplier);
-  const totalModelCost = Math.round(MOCK_MODELS.reduce((a, m) => a + m.cost, 0) * timeMultiplier * 10) / 10;
   const maxToken = Math.max(...metrics.map(m => Math.max(m.todayTokens, m.baselineTokens))) * timeMultiplier;
   const tokenUnit = totalTodayTokens >= 1000000 ? `${(totalTodayTokens / 1000000).toFixed(1)}M` : `${(totalTodayTokens / 1000).toFixed(0)}k`;
 
@@ -457,7 +303,7 @@ const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; o
       </div>
 
       {/* ── KPI Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <div style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
           <ThunderboltOutlined style={{ color: '#6366F1', fontSize: 18 }} />
           <div style={{ fontSize: 28, fontWeight: 800, color: '#6366F1', lineHeight: 1, marginTop: 10 }}>{tokenUnit}</div>
@@ -484,21 +330,14 @@ const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; o
           <div style={{ fontSize: 12, color: '#555', marginTop: 6, fontWeight: 500 }}>拦截次数</div>
           <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{timeRange === 'today' ? '今日敏感词命中' : timeRange === '7d' ? '近7天敏感词命中' : '近30天敏感词命中'}</div>
         </div>
-        <div style={{ background: '#fff', borderRadius: 12, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', cursor: 'pointer' }}
-          onClick={() => setSelectedModel(MOCK_MODELS[0])}>
-          <SafetyCertificateOutlined style={{ color: '#ea580c', fontSize: 18 }} />
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#ea580c', lineHeight: 1, marginTop: 10 }}>¥{totalModelCost.toFixed(0)}</div>
-          <div style={{ fontSize: 12, color: '#555', marginTop: 6, fontWeight: 500 }}>AI 模型成本</div>
-          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>{timeRange === 'today' ? '今日累计' : timeRange === '7d' ? '近7天累计' : '近30天累计'}</div>
-        </div>
       </div>
 
-      {/* ── Token消耗分布 + AI模型成本 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8f0', padding: '18px 22px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>
-            Token 消耗分布（{timeRange === 'today' ? '今日' : timeRange === '7d' ? '近7天' : '近30天'}）
-          </div>
+      {/* ── Token消耗分布 ── */}
+      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8f0', padding: '18px 22px' }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>
+          Token 消耗分布（{timeRange === 'today' ? '今日' : timeRange === '7d' ? '近7天' : '近30天'}）
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0 40px' }}>
           {[...metrics].sort((a, b) => b.todayTokens - a.todayTokens).map(m => {
             const cs = CIRCUIT_CONFIG[m.circuitStatus];
             const barGradient = m.circuitStatus === 'throttled'
@@ -523,32 +362,6 @@ const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; o
                 </div>
                 <div style={{ height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ height: '100%', borderRadius: 3, width: `${barWidth}%`, background: barGradient, transition: 'width 0.5s' }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8f0', padding: '18px 22px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', marginBottom: 20 }}>AI 模型成本分布</div>
-          {MOCK_MODELS.map(model => {
-            const budgetPct = Math.round(model.cost / model.budget * 100);
-            const overBudget = budgetPct > 80;
-            return (
-              <div key={model.name} style={{ marginBottom: 18, cursor: 'pointer' }} onClick={() => setSelectedModel(model)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                  <div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a' }}>{model.name}</span>
-                    <span style={{ fontSize: 10, color: '#bbb', marginLeft: 5 }}>{model.provider}</span>
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: overBudget ? '#d97706' : model.color }}>¥{model.cost.toFixed(0)}</span>
-                </div>
-                <div style={{ height: 5, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(budgetPct, 100)}%`, background: overBudget ? 'linear-gradient(90deg, #f59e0b, #d97706)' : `linear-gradient(90deg, ${model.color}80, ${model.color})`, transition: 'width 0.5s' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                  <span style={{ fontSize: 10, color: '#bbb' }}>预算 ¥{model.budget}</span>
-                  <span style={{ fontSize: 10, color: overBudget ? '#d97706' : '#bbb', fontWeight: overBudget ? 600 : 400 }}>{overBudget ? `⚠ 已用 ${budgetPct}%` : `${budgetPct}% 已用`}</span>
                 </div>
               </div>
             );
@@ -662,14 +475,6 @@ const OverviewTab: React.FC<{ alerts: AlertEvent[]; metrics: BehaviorMetric[]; o
           })
         )}
       </div>
-
-      {selectedModel && (
-        <ModelDetailDrawer
-          model={selectedModel}
-          calls={MOCK_MODEL_CALLS[selectedModel.name] || []}
-          onClose={() => setSelectedModel(null)}
-        />
-      )}
     </div>
   );
 };
@@ -1082,138 +887,6 @@ const SensitiveTab: React.FC<{ words: SensitiveWordGroup[]; onUpdate: (words: Se
   );
 };
 
-// ─── Fence Tab ─────────────────────────────────────────���─────────────────────────
-const FenceTab: React.FC<{ fences: FenceConfig[] }> = ({ fences }) => {
-  const [selected, setSelected]   = useState(fences[0]?.employeeId || '');
-  const [activeTab, setActiveTab] = useState<FenceTab>('ip');
-  const [inputVal, setInputVal]   = useState('');
-  const [configs, setConfigs]     = useState(fences);
-  const [addedHint, setAddedHint] = useState(false);
-
-  const fence = configs.find(f => f.employeeId === selected);
-
-  const TABS = [
-    { key: 'ip'        as FenceTab, label: 'IP 白名单',  field: 'ipWhitelist'     as keyof FenceConfig, placeholder: '如 10.0.0.0/8',  color: PRIMARY,    tip: '仅允许以下 IP 段访问此员工，网关层直接拒绝未列出的来源' },
-    { key: 'api'       as FenceTab, label: 'API 范围',   field: 'allowedApis'     as keyof FenceConfig, placeholder: '如 pdf_parser',  color: '#059669',  tip: '此员工仅能调用以下工具，即使已挂载其他技能也无法执行' },
-    { key: 'topic'     as FenceTab, label: '话题黑名单', field: 'topicBlacklist'  as keyof FenceConfig, placeholder: '如 竞品价格',    color: '#dc2626',  tip: '用户输入命中以下话题时，系统拒绝回答并记录安全事件' },
-    { key: 'knowledge' as FenceTab, label: '知识边界',   field: 'knowledgeScopes' as keyof FenceConfig, placeholder: '如 法律法规库', color: '#d97706',  tip: '此员工仅能检索以下知识库，其他索引对其不可见' },
-  ];
-  const cur = TABS.find(t => t.key === activeTab)!;
-
-  const items = fence ? (fence[cur.field] as string[]) : [];
-
-  const addItem = () => {
-    const val = inputVal.trim();
-    if (!val || !fence) return;
-    setConfigs(prev => prev.map(f =>
-      f.employeeId === selected
-        ? { ...f, [cur.field]: [...(f[cur.field] as string[]), val] }
-        : f
-    ));
-    setInputVal('');
-    setAddedHint(true);
-    setTimeout(() => setAddedHint(false), 1500);
-  };
-
-  const removeItem = (idx: number) => {
-    setConfigs(prev => prev.map(f =>
-      f.employeeId === selected
-        ? { ...f, [cur.field]: (f[cur.field] as string[]).filter((_, i) => i !== idx) }
-        : f
-    ));
-  };
-
-  const isMonospace = ['ip', 'api'].includes(activeTab);
-
-  return (
-    <div>
-      {/* Employee selector */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-        {configs.map(f => (
-          <div key={f.employeeId} onClick={() => setSelected(f.employeeId)} style={{
-            padding: '7px 14px', borderRadius: 9, cursor: 'pointer', fontSize: 13,
-            background: selected === f.employeeId ? PRIMARY_LIGHT : '#f3f4f6',
-            color: selected === f.employeeId ? PRIMARY : '#6b7280',
-            border: `1.5px solid ${selected === f.employeeId ? PRIMARY : 'transparent'}`,
-            fontWeight: selected === f.employeeId ? 600 : 400, transition: 'all 0.15s',
-          }}>
-            {f.employeeName}
-          </div>
-        ))}
-        <div style={{ padding: '7px 12px', borderRadius: 9, cursor: 'pointer', fontSize: 13, background: '#f3f4f6', color: '#9ca3af', border: '1.5px dashed #e5e7eb', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <PlusOutlined style={{ fontSize: 11 }} />添加
-        </div>
-      </div>
-
-      {fence && (
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8f0', overflow: 'hidden' }}>
-
-          {/* Sub-tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #f0f0f0', padding: '0 18px' }}>
-            {TABS.map(t => {
-              const count = (fence[t.field] as string[]).length;
-              return (
-                <div key={t.key} onClick={() => { setActiveTab(t.key); setInputVal(''); }} style={{
-                  padding: '11px 14px', cursor: 'pointer', fontSize: 12,
-                  fontWeight: activeTab === t.key ? 600 : 400,
-                  color: activeTab === t.key ? t.color : '#9ca3af',
-                  borderBottom: `2.5px solid ${activeTab === t.key ? t.color : 'transparent'}`,
-                  transition: 'all 0.15s', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 5,
-                }}>
-                  {t.label}
-                  <span style={{ fontSize: 10, padding: '0 4px', borderRadius: 6, background: activeTab === t.key ? `${t.color}18` : '#f3f4f6', color: activeTab === t.key ? t.color : '#bbb' }}>
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ padding: '16px 18px' }}>
-            <div style={{ fontSize: 11, color: '#888', background: '#fafafa', borderRadius: 7, padding: '7px 11px', marginBottom: 12, lineHeight: 1.6 }}>{cur.tip}</div>
-
-            {/* Item list */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12, minHeight: 36 }}>
-              {items.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 7, fontSize: 11, color: cur.color, background: `${cur.color}12`, border: `1px solid ${cur.color}30` }}>
-                  <span style={{ fontFamily: isMonospace ? 'monospace' : 'inherit' }}>{item}</span>
-                  <span onClick={() => removeItem(idx)} style={{ cursor: 'pointer', color: '#bbb', marginLeft: 2 }}>×</span>
-                </div>
-              ))}
-              {items.length === 0 && <div style={{ color: '#bbb', fontSize: 11, padding: '6px 0' }}>暂无配置，请添加</div>}
-            </div>
-
-            {/* Add input */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', gap: 7 }}>
-                <input
-                  value={inputVal}
-                  onChange={e => setInputVal(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addItem()}
-                  placeholder={cur.placeholder}
-                  style={{ flex: 1, height: 32, border: '1px solid #e5e7eb', borderRadius: 7, padding: '0 10px', fontSize: 12, outline: 'none', color: '#333', fontFamily: isMonospace ? 'monospace' : 'inherit' }}
-                />
-                <button
-                  onClick={addItem}
-                  disabled={!inputVal.trim()}
-                  style={{ height: 32, padding: '0 14px', border: 'none', borderRadius: 7, cursor: inputVal.trim() ? 'pointer' : 'not-allowed', background: inputVal.trim() ? cur.color : '#e5e7eb', color: inputVal.trim() ? '#fff' : '#bbb', fontSize: 12, fontWeight: 600 }}
-                >
-                  添加
-                </button>
-              </div>
-              {addedHint && (
-                <div style={{ fontSize: 11, color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span>✓</span> 已添加并生效
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // ─── Main ────────────────────────────────────────────────────────────────────────
 const SecurityCenter: React.FC = () => {
   const [tab, setTab] = useState<MainTab>('overview');
@@ -1243,7 +916,6 @@ const SecurityCenter: React.FC = () => {
     { key: 'logs',       label: '日志中心' },
     { key: 'behavior',   label: '行为风控' },
     { key: 'sensitive',  label: '敏感词拦截' },
-    { key: 'fence',      label: '围栏配置' },
   ];
 
   return (
@@ -1260,7 +932,7 @@ const SecurityCenter: React.FC = () => {
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>管控中心</div>
-            <div style={{ fontSize: 11, color: '#bbb' }}>企业级监控 · 日志 · 行为风控 · 敏感词 · 围栏</div>
+            <div style={{ fontSize: 11, color: '#bbb' }}>企业级监控 · 日志 · 行为风控 · 敏感词</div>
           </div>
         </div>
         {criticalAlerts > 0 && (
@@ -1288,7 +960,6 @@ const SecurityCenter: React.FC = () => {
       {tab === 'logs'      && <LogsTab />}
       {tab === 'behavior'  && <BehaviorTab metrics={metrics} onCircuit={handleCircuit} />}
       {tab === 'sensitive' && <SensitiveTab words={words} onUpdate={setWords} />}
-      {tab === 'fence'     && <FenceTab fences={MOCK_FENCES} />}
     </div>
   );
 };

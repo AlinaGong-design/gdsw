@@ -1,25 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { employeeStore } from '../store/employeeStore';
-import { Badge, Button, Input, Progress, Tag, Drawer, Switch, Modal } from 'antd';
+import { Button, Drawer, Switch, Badge } from 'antd';
 import {
-  SearchOutlined, StarFilled, StarOutlined, ThunderboltOutlined, TeamOutlined,
-  CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined,
-  AppstoreOutlined, PlusOutlined, ArrowRightOutlined, SettingOutlined,
-  RiseOutlined, FallOutlined, BarChartOutlined, ArrowUpOutlined, ArrowDownOutlined,
-  BlockOutlined, DatabaseOutlined, ApiOutlined,
+  ThunderboltOutlined, TeamOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  BarChartOutlined, ArrowUpOutlined, ArrowDownOutlined,
+  RiseOutlined, FallOutlined, SettingOutlined,
+  ClockCircleOutlined, FireOutlined, AlertOutlined,
+  DashboardOutlined, UserOutlined,
 } from '@ant-design/icons';
-
-// ─── 工具函数 ──────────────────────────────────────────────
-const AVATAR_COLORS = [
-  'linear-gradient(135deg, #6366F1, #8B5CF6)', 'linear-gradient(135deg, #3B82F6, #06B6D4)',
-  'linear-gradient(135deg, #10B981, #34d399)', 'linear-gradient(135deg, #F59E0B, #FBBF24)',
-  'linear-gradient(135deg, #EF4444, #F87171)', 'linear-gradient(135deg, #8B5CF6, #EC4899)',
-];
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 // ─── 时间维度 ──────────────────────────────────────────────
 type PeriodKey = 'day' | 'week' | 'month' | 'quarter';
@@ -32,10 +22,10 @@ const PERIOD_OPTIONS: { key: PeriodKey; label: string; comp: string }[] = [
 
 // ─── 统计数据（分时段） ───────────────────────────────────
 const STAT_META = [
-  { label: '调用量',    icon: ThunderboltOutlined,      color: '#6366F1' },
-  { label: '运行中员工', icon: TeamOutlined,              color: '#10B981' },
-  { label: '待处理问题', icon: ExclamationCircleOutlined, color: '#F59E0B' },
-  { label: '完成率',    icon: CheckCircleOutlined,       color: '#3B82F6' },
+  { label: '总调用量',    icon: ThunderboltOutlined,      color: '#6366F1', bgGrad: 'linear-gradient(135deg,#6366F115,#8B5CF615)' },
+  { label: '在线员工数',  icon: TeamOutlined,              color: '#10B981', bgGrad: 'linear-gradient(135deg,#10B98115,#34D39915)' },
+  { label: '待处理问题',  icon: ExclamationCircleOutlined, color: '#F59E0B', bgGrad: 'linear-gradient(135deg,#F59E0B15,#FBBF2415)' },
+  { label: '任务完成率',  icon: CheckCircleOutlined,       color: '#3B82F6', bgGrad: 'linear-gradient(135deg,#3B82F615,#60A5FA15)' },
 ];
 const STATS_DATA: Record<PeriodKey, Array<{ value: string; change: string; up: boolean }>> = {
   day:     [{ value: '1,247',  change: '+12.3%', up: true }, { value: '12', change: '+2',   up: true  }, { value: '3',  change: '-1',   up: false }, { value: '94.5%', change: '+2.1%', up: true  }],
@@ -52,66 +42,32 @@ const TREND_DATA: Record<PeriodKey, { labels: string[]; calls: number[]; rate: n
   quarter: { labels: ['1月','2月','3月','4月','5月','6月','7月'], calls: [28000,22000,31000,35000,38000,29000,42000], rate: [87,85,90,92,94,91,95] },
 };
 
-// ─── 我的收藏（含全部可用员工） ────────────────────────────
-const ALL_EMPLOYEES = [
-  { id: 'de-008', name: '智能巡检助手', dept: '管道运营部', domain: '管道安全域', status: 'published', callCount: 2156 },
-  { id: 'de-001', name: '法务合规助手', dept: '法务部',   domain: '法务域', status: 'published', callCount: 328 },
-  { id: 'de-002', name: 'HR 招聘助手',  dept: '人力资源', domain: '人力域', status: 'published', callCount: 215 },
-  { id: 'de-003', name: '财务报表助手', dept: '财务部',   domain: '财务域', status: 'testing',   callCount: 89  },
-  { id: 'de-004', name: '代码审查助手', dept: '技术部',   domain: '技术域', status: 'paused',    callCount: 142 },
-  { id: 'de-005', name: '智能客服分发', dept: '客户成功', domain: '客服域', status: 'draft',     callCount: 0   },
-  { id: 'de-006', name: '智能客服助手', dept: '客户成功', domain: '客服域', status: 'published', callCount: 512 },
-  { id: 'de-007', name: '运营数据助手', dept: '运营部',   domain: '运营域', status: 'published', callCount: 173 },
-];
-const INIT_FAV_IDS = ['de-008', 'de-001', 'de-002', 'de-006', 'de-003', 'de-007'];
-
-// ─── 业务域 ───────────────────────────────────────────────
-const DOMAIN_LIST = [
-  { id: 'all',     name: '全部', color: '#6366F1', employees: [
-    { id: 'de-008', name: '智能巡检助手', dept: '管道安全域', score: 4.7, heat: 83, type: '定制款' },
-    { id: 'de-001', name: '法务合规助手', dept: '法务域',  score: 4.8, heat: 95, type: '通用款' },
-    { id: 'de-002', name: 'HR 招聘助手',  dept: '人力域',  score: 4.6, heat: 78, type: '定制款' },
-    { id: 'de-003', name: '财务报表助手', dept: '财务域',  score: 4.9, heat: 88, type: '通用款' },
-    { id: 'de-004', name: '代码审查助手', dept: '技术域',  score: 4.5, heat: 62, type: '升级款' },
-    { id: 'de-006', name: '智能客服助手', dept: '客服域',  score: 4.7, heat: 91, type: '通用款' },
-    { id: 'de-007', name: '运营数据助手', dept: '运营域',  score: 4.3, heat: 55, type: '定制款' },
-  ]},
-  { id: 'legal',   name: '法务域', color: '#6366F1', employees: [{ id: 'de-001', name: '法务合规助手', dept: '法务域', score: 4.8, heat: 95, type: '通用款' }] },
-  { id: 'hr',      name: '人力域', color: '#10B981', employees: [{ id: 'de-002', name: 'HR 招聘助手',  dept: '人力域', score: 4.6, heat: 78, type: '定制款' }] },
-  { id: 'finance', name: '财务域', color: '#F59E0B', employees: [{ id: 'de-003', name: '财务报表助手', dept: '财务域', score: 4.9, heat: 88, type: '通用款' }] },
-  { id: 'tech',    name: '技术域', color: '#3B82F6', employees: [{ id: 'de-004', name: '代码审查助手', dept: '技术域', score: 4.5, heat: 62, type: '升级款' }] },
-  { id: 'pipeline', name: '管道安全域', color: '#EF4444', employees: [{ id: 'de-008', name: '智能巡检助手', dept: '管道安全域', score: 4.7, heat: 83, type: '定制款' }] },
+// ─── 员工运行状态数据 ──────────────────────────────────────
+const EMPLOYEE_STATUS_DATA = [
+  { name: '公文处理专员',   dept: '综合部',     calls: 312, rate: 97.2, status: 'online',  trend: 'up'   },
+  { name: '合同审查助手',   dept: '法务部',     calls: 287, rate: 95.8, status: 'online',  trend: 'up'   },
+  { name: '财务报表助手',   dept: '财务部',     calls: 145, rate: 91.3, status: 'warning', trend: 'down' },
+  { name: 'HR 招聘助手',   dept: '人力资源部', calls: 132, rate: 93.6, status: 'online',  trend: 'flat' },
+  { name: '运营数据助手',   dept: '运营部',     calls:  98, rate: 90.2, status: 'online',  trend: 'up'   },
+  { name: '采购询价助手',   dept: '采购部',     calls:  89, rate: 88.4, status: 'offline', trend: 'down' },
 ];
 
-// ─── 待处理事项（含跳转目标） ─────────────────────────────
-const TODOS = [
-  { id: 1, priority: 'high',   text: '财务报表助手 v3.0 待审核发布',  tag: '待发布',  time: '2小时前',  targetHash: 'digital-employee-library', action: '去发布' },
-  { id: 2, priority: 'high',   text: '智能客服分发 API 调用异常告警',  tag: '运维告警', time: '30分钟前', targetHash: 'digital-employee-library', action: '查看' },
-  { id: 3, priority: 'medium', text: '代码审查助手收到 3 条问题反馈',  tag: '问题反馈', time: '4小时前',  targetHash: 'digital-employee-library', action: '处理' },
-  { id: 4, priority: 'low',    text: 'HR 招聘助手有新版本可更新',      tag: '版本更新', time: '1天前',    targetHash: 'digital-employee-library', action: '更新' },
+// ─── 近期事件 ─────────────────────────────────────────────
+const RECENT_EVENTS = [
+  { time: '09:42', type: 'success', text: '「合同审查助手」成功完成合同比对任务（38条款）' },
+  { time: '09:15', type: 'warning', text: '「财务报表助手」调用超时 3 次，响应 P95 劣化至 4.2s' },
+  { time: '08:57', text: '「公文处理专员」接入飞书群，完成12条消息回复', type: 'info' },
+  { time: '08:30', type: 'success', text: '「HR 招聘助手」完成本周简历筛选，入围候选人 8 名' },
+  { time: '昨日', type: 'error',   text: '「采购询价助手」因权限不足下线，等待修复' },
 ];
-
-const PRIORITY_CONFIG: Record<string, { color: string }> = {
-  high:   { color: '#ff4d4f' },
-  medium: { color: '#f59e0b' },
-  low:    { color: '#52c41a' },
-};
-
-const TYPE_CONFIG: Record<string, { color: string; bg: string }> = {
-  '通用款': { color: '#6366F1', bg: '#eef2ff' },
-  '定制款': { color: '#10B981', bg: '#f0fdf4' },
-  '升级款': { color: '#F59E0B', bg: '#fefce8' },
-};
 
 // ─── 模块配置 ─────────────────────────────────────────────
 interface ModuleConfig { id: string; label: string; desc: string; visible: boolean; }
 const DEFAULT_MODULES: ModuleConfig[] = [
-  { id: 'stats',     label: '统计数据看板', desc: '调用量、运行状态等核心指标，支持多时段同比',   visible: true },
-  { id: 'favorites', label: '我的收藏',     desc: '常用数字员工快速访问入口',                     visible: true },
-  { id: 'domain',    label: '业务域员工',   desc: '按业务域分类展示员工分布与热度',               visible: true },
-  { id: 'todo',      label: '待处理事项',   desc: '待发布、问题反馈、运维告警，支持一键跳转',     visible: true },
-  { id: 'shortcuts', label: '快捷入口',     desc: '常用功能一键直达',                             visible: true },
-  { id: 'trends',    label: '数据趋势分析', desc: '调用趋势图 + 同比 / 环比对比表',               visible: true },
+  { id: 'stats',     label: '核心指标看板',   desc: '调用量、运行状态等核心指标，支持多时段同比',  visible: true },
+  { id: 'trends',    label: '数据趋势分析',   desc: '调用趋势图 + 同比 / 环比对比表',              visible: true },
+  { id: 'employees', label: '员工运行状态',   desc: '各数字员工实时在线情况与调用表现',             visible: true },
+  { id: 'events',    label: '近期事件动态',   desc: '异常告警、任务完成、状态变化等实时动态',       visible: true },
 ];
 
 const ORG_LEVELS   = ['集团总部', '子公司', '部门', '市局', '区县'];
@@ -119,36 +75,24 @@ const ROLE_OPTIONS = ['管理层', '一线员工', '运维人员'];
 
 // ─── 主组件 ───────────────────────────────────────────────
 const DigitalEmployeeWorkbench: React.FC = () => {
-  const [period, setPeriod]               = useState<PeriodKey>('week');
-  const [activeDomain, setActiveDomain]   = useState('all');
-  const [searchText, setSearchText]       = useState('');
-  const [favIds, setFavIds]               = useState<string[]>(INIT_FAV_IDS);
-  const [configOpen, setConfigOpen]       = useState(false);
-  const [favModalOpen, setFavModalOpen]   = useState(false);
-  const [modules, setModules]             = useState<ModuleConfig[]>(DEFAULT_MODULES);
-  const [orgLevel, setOrgLevel]           = useState('集团总部');
-  const [roleOption, setRoleOption]       = useState('管理层');
-  const [favSearch, setFavSearch]         = useState('');
+  const [period, setPeriod]         = useState<PeriodKey>('week');
+  const [configOpen, setConfigOpen] = useState(false);
+  const [modules, setModules]       = useState<ModuleConfig[]>(DEFAULT_MODULES);
+  const [orgLevel, setOrgLevel]     = useState('集团总部');
+  const [roleOption, setRoleOption] = useState('管理层');
 
-  // 订阅 Store 变化，员工评分/调用量更新后自动刷新工作台
   const [, forceUpdate] = useState(0);
   useEffect(() => {
     const unsub = employeeStore.subscribe(() => forceUpdate(n => n + 1));
     return () => { unsub(); };
   }, []);
 
-  // 从 Store 获取实时统计，覆盖静态 STATS_DATA 中的调用量和运行数
   const storeStats = employeeStore.getStats();
 
-  const periodComp     = PERIOD_OPTIONS.find(p => p.key === period)!.comp;
-  const currentStats   = STATS_DATA[period];
-  const currentTrend   = TREND_DATA[period];
-  const currentDomain  = DOMAIN_LIST.find(d => d.id === activeDomain) || DOMAIN_LIST[0];
-  const visibleFavs    = ALL_EMPLOYEES.filter(e => favIds.includes(e.id));
-  const filteredEmps   = currentDomain.employees.filter(e =>
-    !searchText || e.name.includes(searchText) || e.dept.includes(searchText)
-  );
-  const isVisible      = (id: string) => modules.find(m => m.id === id)?.visible !== false;
+  const periodComp   = PERIOD_OPTIONS.find(p => p.key === period)!.comp;
+  const currentStats = STATS_DATA[period];
+  const currentTrend = TREND_DATA[period];
+  const isVisible    = (id: string) => modules.find(m => m.id === id)?.visible !== false;
 
   const toggleModule = (id: string) =>
     setModules(prev => prev.map(m => m.id === id ? { ...m, visible: !m.visible } : m));
@@ -164,255 +108,125 @@ const DigitalEmployeeWorkbench: React.FC = () => {
 
   const trendMax = Math.max(...currentTrend.calls);
 
+  const statusColor = (s: string) => s === 'online' ? '#10B981' : s === 'warning' ? '#F59E0B' : '#9ca3af';
+  const statusLabel = (s: string) => s === 'online' ? '在线' : s === 'warning' ? '异常' : '离线';
+  const eventColor  = (t: string) => t === 'success' ? '#10B981' : t === 'warning' ? '#F59E0B' : t === 'error' ? '#EF4444' : '#6366F1';
+  const eventIcon   = (t: string) => t === 'success' ? <CheckCircleOutlined /> : t === 'warning' ? <AlertOutlined /> : t === 'error' ? <ExclamationCircleOutlined /> : <ClockCircleOutlined />;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-      {/* ── 欢迎横幅 ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 55%, #EC4899 100%)',
-        borderRadius: 14,
-        padding: '28px 36px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        color: '#fff',
-      }}>
-        {/* 左侧：标题 / 副标题 / 标签行 */}
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            👋🏻 欢迎回到数字员工工作台
+      {/* ── 页面顶栏 ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DashboardOutlined style={{ color: '#fff', fontSize: 16 }} />
           </div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', marginBottom: 14 }}>
-            今天是 2026年3月29日，您的数字员工团队运转良好
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[orgLevel, roleOption, `${storeStats.activeCount} 个员工运行中`].map(t => (
-              <span key={t} style={{ fontSize: 12, padding: '3px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 500 }}>{t}</span>
-            ))}
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2 }}>数字员工驾驶舱</div>
+            <div style={{ fontSize: 11, color: '#bbb' }}>实时监控 · 数据分析 · 运营洞察</div>
           </div>
         </div>
-
-        {/* 右侧：操作按钮 */}
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          <Button
-            icon={<SettingOutlined />}
-            size="small"
-            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: 8 }}
-            onClick={() => setConfigOpen(true)}
-          >
-            配置工作台
-          </Button>
-          <Button
-            icon={<PlusOutlined />}
-            size="small"
-            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff', borderRadius: 8 }}
-            onClick={() => { window.location.hash = 'digital-employee-library'; }}
-          >
-            创建员工
-          </Button>
-          <Button
-            size="small"
-            style={{ background: '#fff', border: 'none', color: '#6366F1', fontWeight: 600, borderRadius: 8 }}
-            onClick={() => { window.location.hash = 'digital-employee-library'; }}
-          >
-            员工库 →
-          </Button>
-        </div>
-      </div>
-
-      {/* ── 时段选择 + 统计卡 ── */}
-      {isVisible('stats') && (
-        <div>
-          {/* 时段 Tab */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#aaa', marginRight: 4 }}>数据维度：</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* 时段选择 */}
+          <div style={{ display: 'flex', gap: 4, background: '#f5f5f5', borderRadius: 10, padding: 3 }}>
             {PERIOD_OPTIONS.map(p => (
               <div
                 key={p.key}
                 onClick={() => setPeriod(p.key)}
-                style={{ padding: '4px 14px', borderRadius: 16, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', background: period === p.key ? '#6366F1' : '#f5f5f5', color: period === p.key ? '#fff' : '#666', fontWeight: period === p.key ? 600 : 400 }}
+                style={{ padding: '4px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', background: period === p.key ? '#6366F1' : 'transparent', color: period === p.key ? '#fff' : '#666', fontWeight: period === p.key ? 600 : 400 }}
               >{p.label}</div>
             ))}
-            <span style={{ marginLeft: 6, fontSize: 12, color: '#bbb' }}>· {periodComp}</span>
           </div>
-          {/* 4卡 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-            {STAT_META.map((meta, i) => {
-              const d    = currentStats[i];
-              const Icon = meta.icon;
-              // 调用量(i=0) 和 运行中员工(i=1) 使用 Store 实时值
-              const liveValue = i === 0
-                ? (storeStats.totalCalls >= 1000 ? (storeStats.totalCalls / 1000).toFixed(1) + 'k' : String(storeStats.totalCalls))
-                : i === 1 ? String(storeStats.activeCount)
-                : d.value;
-              return (
-                <div key={meta.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 18px', border: '1px solid #f0f0f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, color: '#999' }}>{meta.label}</span>
-                    <div style={{ width: 30, height: 30, borderRadius: 8, background: `${meta.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon style={{ color: meta.color, fontSize: 15 }} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>{liveValue}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                    {d.up
-                      ? <ArrowUpOutlined style={{ color: '#10B981', fontSize: 11 }} />
-                      : <ArrowDownOutlined style={{ color: '#F59E0B', fontSize: 11 }} />}
-                    <span style={{ color: d.up ? '#10B981' : '#F59E0B', fontWeight: 500 }}>{d.change}</span>
-                    <span style={{ color: '#bbb' }}>{periodComp}</span>
+          <Button
+            icon={<SettingOutlined />}
+            size="small"
+            style={{ borderRadius: 8 }}
+            onClick={() => setConfigOpen(true)}
+          >
+            配置
+          </Button>
+        </div>
+      </div>
+
+      {/* ── 核心指标看板（4卡）── */}
+      {isVisible('stats') && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 18 }}>
+          {STAT_META.map((meta, i) => {
+            const d    = currentStats[i];
+            const Icon = meta.icon;
+            const liveValue = i === 0
+              ? (storeStats.totalCalls >= 1000 ? (storeStats.totalCalls / 1000).toFixed(1) + 'k' : String(storeStats.totalCalls))
+              : i === 1 ? String(storeStats.activeCount)
+              : d.value;
+            return (
+              <div key={meta.label} style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', position: 'relative', overflow: 'hidden' }}>
+                {/* 背景装饰 */}
+                <div style={{ position: 'absolute', right: -8, top: -8, width: 60, height: 60, borderRadius: '50%', background: meta.bgGrad }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 500 }}>{meta.label}</span>
+                  <div style={{ width: 32, height: 32, borderRadius: 9, background: `${meta.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                    <Icon style={{ color: meta.color, fontSize: 15 }} />
                   </div>
                 </div>
-              );
-            })}
-          </div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#1a1a1a', marginBottom: 8, letterSpacing: -0.5 }}>{liveValue}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                  {d.up
+                    ? <ArrowUpOutlined style={{ color: '#10B981', fontSize: 10 }} />
+                    : <ArrowDownOutlined style={{ color: '#F59E0B', fontSize: 10 }} />}
+                  <span style={{ color: d.up ? '#10B981' : '#F59E0B', fontWeight: 600 }}>{d.change}</span>
+                  <span style={{ color: '#bbb' }}>{periodComp}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ── 主内容：双列 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 296px', gap: 18, alignItems: 'start' }}>
-
-        {/* 左列 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-
-          {/* 我的收藏 */}
-          {isVisible('favorites') && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #f0f0f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <StarFilled style={{ color: '#F59E0B', fontSize: 15 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>我的收藏</span>
-                  <Tag color="gold" style={{ fontSize: 11, margin: 0 }}>{visibleFavs.length}</Tag>
-                </div>
-                <Button type="link" size="small" style={{ color: '#6366F1', padding: 0, fontSize: 12 }} onClick={() => setFavModalOpen(true)}>管理收藏</Button>
-              </div>
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4 }}>
-                {visibleFavs.map(fav => (
-                  <div
-                    key={fav.id}
-                    style={{ flexShrink: 0, width: 150, padding: 12, borderRadius: 10, border: '1px solid #e8e8f0', cursor: 'pointer', transition: 'all 0.15s', background: '#fafbff', position: 'relative' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#6366F1'; el.style.boxShadow = '0 2px 8px rgba(99,102,241,0.15)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#e8e8f0'; el.style.boxShadow = 'none'; }}
-                  >
-                    {/* 取消收藏 */}
-                    <div
-                      title="取消收藏"
-                      onClick={e => { e.stopPropagation(); setFavIds(prev => prev.filter(id => id !== fav.id)); }}
-                      style={{ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: '50%', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10, color: '#aaa', zIndex: 1 }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#fde8e8'; (e.currentTarget as HTMLDivElement).style.color = '#ff4d4f'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#f0f0f0'; (e.currentTarget as HTMLDivElement).style.color = '#aaa'; }}
-                    >✕</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: getAvatarColor(fav.name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fav.name.charAt(0)}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fav.name}</div>
-                        <div style={{ fontSize: 10, color: '#aaa' }}>{fav.dept}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Badge status={fav.status === 'published' ? 'success' : fav.status === 'testing' ? 'processing' : 'default'} text={<span style={{ fontSize: 10, color: '#666' }}>{fav.status === 'published' ? '运行中' : fav.status === 'testing' ? '测试中' : fav.status === 'paused' ? '已暂停' : '草稿'}</span>} />
-                      <span style={{ fontSize: 10, color: '#bbb' }}>{fav.callCount}次</span>
-                    </div>
-                  </div>
-                ))}
-                {/* 添加收藏 */}
-                <div
-                  onClick={() => setFavModalOpen(true)}
-                  style={{ flexShrink: 0, width: 150, padding: 12, borderRadius: 10, border: '1.5px dashed #d9d9d9', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#fafafa', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#6366F1'; el.style.background = '#f5f4ff'; }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#d9d9d9'; el.style.background = '#fafafa'; }}
-                >
-                  <PlusOutlined style={{ color: '#bbb', fontSize: 18 }} />
-                  <span style={{ fontSize: 11, color: '#aaa' }}>添加收藏</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 业务域员工 */}
-          {isVisible('domain') && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #f0f0f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <AppstoreOutlined style={{ color: '#6366F1', fontSize: 15 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>业务域员工</span>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <Input prefix={<SearchOutlined style={{ color: '#bbb' }} />} placeholder="搜索员工..." value={searchText} onChange={e => setSearchText(e.target.value)} style={{ width: 160, borderRadius: 8, fontSize: 12 }} size="small" allowClear />
-                  <Button type="link" size="small" style={{ color: '#6366F1', padding: 0, fontSize: 12 }} onClick={() => { window.location.hash = 'digital-employee-domain'; }}>域管理 →</Button>
-                </div>
-              </div>
-              {/* 域 Tab */}
-              <div style={{ display: 'flex', gap: 7, marginBottom: 14, flexWrap: 'wrap' }}>
-                {DOMAIN_LIST.map(d => (
-                  <div key={d.id} onClick={() => setActiveDomain(d.id)} style={{ padding: '4px 14px', borderRadius: 20, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', background: activeDomain === d.id ? d.color : '#f5f5f5', color: activeDomain === d.id ? '#fff' : '#666', fontWeight: activeDomain === d.id ? 600 : 400 }}>
-                    {d.name}<span style={{ marginLeft: 4, fontSize: 10, opacity: 0.8 }}>{d.employees.length}</span>
-                  </div>
-                ))}
-              </div>
-              {/* 员工网格 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                {filteredEmps.map(emp => (
-                  <div
-                    key={emp.id}
-                    onClick={() => { window.location.hash = 'digital-employee-library'; }}
-                    style={{ padding: 12, borderRadius: 10, border: '1px solid #e8e8f0', cursor: 'pointer', transition: 'all 0.2s', background: '#fafbff' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#6366F1'; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 4px 12px rgba(99,102,241,0.12)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#e8e8f0'; el.style.transform = ''; el.style.boxShadow = 'none'; }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 9, background: getAvatarColor(emp.name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{emp.name.charAt(0)}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emp.name}</div>
-                        <div style={{ fontSize: 10, color: '#aaa' }}>{emp.dept}</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: TYPE_CONFIG[emp.type].bg, color: TYPE_CONFIG[emp.type].color, fontWeight: 500 }}>{emp.type}</span>
-                      <span style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600 }}>⭐{emp.score}</span>
-                    </div>
-                    <Progress percent={emp.heat} size="small" showInfo={false} strokeColor={emp.heat > 80 ? '#6366F1' : emp.heat > 60 ? '#10B981' : '#F59E0B'} />
-                  </div>
-                ))}
-                {filteredEmps.length === 0 && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 20, color: '#aaa', fontSize: 12 }}>暂无员工</div>}
-              </div>
-            </div>
-          )}
+      {/* ── 中间两栏：趋势分析 + 员工状态 ── */}
+      {(isVisible('trends') || isVisible('employees')) && (
+        <div style={{ display: 'grid', gridTemplateColumns: isVisible('trends') && isVisible('employees') ? '1fr 340px' : '1fr', gap: 16, marginBottom: 18 }}>
 
           {/* 数据趋势分析 */}
           {isVisible('trends') && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #f0f0f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <BarChartOutlined style={{ color: '#6366F1', fontSize: 15 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>数据趋势分析</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>数据趋势分析</span>
                 </div>
-                <span style={{ fontSize: 12, color: '#bbb' }}>调用量趋势 · {PERIOD_OPTIONS.find(p => p.key === period)?.label}</span>
+                <span style={{ fontSize: 11, color: '#bbb', background: '#f5f5f5', padding: '3px 10px', borderRadius: 20 }}>
+                  调用量 · {PERIOD_OPTIONS.find(p => p.key === period)?.label}
+                </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                 {/* 柱状图 */}
                 <div>
-                  <div style={{ fontSize: 12, color: '#999', marginBottom: 10 }}>调用量分布</div>
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'flex-end', height: 90 }}>
+                  <div style={{ fontSize: 11, color: '#aaa', marginBottom: 12, fontWeight: 500 }}>调用量分布</div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 100 }}>
                     {currentTrend.calls.map((v, i) => (
-                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: '100%', background: `linear-gradient(180deg, #6366F1, #8B5CF6)`, borderRadius: '3px 3px 0 0', height: Math.max((v / trendMax) * 72, 4), transition: 'height 0.3s', opacity: 0.65 + i * 0.05 }} />
-                        <div style={{ fontSize: 9, color: '#bbb', textAlign: 'center' }}>{currentTrend.labels[i]}</div>
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                        <div style={{ width: '100%', background: `linear-gradient(180deg, #6366F1, #8B5CF6)`, borderRadius: '4px 4px 0 0', height: Math.max((v / trendMax) * 82, 4), transition: 'height 0.3s ease', opacity: 0.6 + (i / currentTrend.calls.length) * 0.4 }} />
+                        <div style={{ fontSize: 9, color: '#bbb', textAlign: 'center', lineHeight: 1.2 }}>{currentTrend.labels[i]}</div>
                       </div>
                     ))}
                   </div>
                 </div>
                 {/* 同比/环比 表格 */}
                 <div>
-                  <div style={{ fontSize: 12, color: '#999', marginBottom: 10 }}>同比 / 环比对比</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  <div style={{ fontSize: 11, color: '#aaa', marginBottom: 12, fontWeight: 500 }}>同比 / 环比对比</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {STAT_META.map((meta, i) => {
                       const d = currentStats[i];
                       return (
-                        <div key={meta.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 8, background: '#f9fafb' }}>
-                          <span style={{ fontSize: 12, color: '#666' }}>{meta.label}</span>
+                        <div key={meta.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: 8, background: '#f9fafb' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1a1a1a' }}>{d.value}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: d.up ? '#10B981' : '#F59E0B', fontWeight: 500 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, color: '#555' }}>{meta.label}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a' }}>{d.value}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: d.up ? '#10B981' : '#F59E0B', fontWeight: 600, minWidth: 48 }}>
                               {d.up ? <RiseOutlined style={{ fontSize: 10 }} /> : <FallOutlined style={{ fontSize: 10 }} />}
                               {d.change}
                             </div>
@@ -420,7 +234,7 @@ const DigitalEmployeeWorkbench: React.FC = () => {
                         </div>
                       );
                     })}
-                    <div style={{ padding: '6px 10px', background: '#eef2ff', borderRadius: 8, fontSize: 11, color: '#6366F1', textAlign: 'center' }}>
+                    <div style={{ padding: '6px 10px', background: '#eef2ff', borderRadius: 8, fontSize: 11, color: '#6366F1', textAlign: 'center', fontWeight: 500 }}>
                       {periodComp} · 数据截至今日
                     </div>
                   </div>
@@ -428,86 +242,82 @@ const DigitalEmployeeWorkbench: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
 
-        {/* 右列 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* 待处理事项 */}
-          {isVisible('todo') && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #f0f0f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          {/* 员工运行状态 */}
+          {isVisible('employees') && (
+            <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <ClockCircleOutlined style={{ color: '#6366F1', fontSize: 14 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>待处理事项</span>
-                  <Tag color="red" style={{ fontSize: 10, margin: 0, borderRadius: 10 }}>{TODOS.filter(t => t.priority === 'high').length} 紧急</Tag>
+                  <UserOutlined style={{ color: '#10B981', fontSize: 14 }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>员工运行状态</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 0 2px #10B98130' }} />
+                  <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>
+                    {EMPLOYEE_STATUS_DATA.filter(e => e.status === 'online').length} 在线
+                  </span>
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {TODOS.map(todo => {
-                  const pCfg = PRIORITY_CONFIG[todo.priority];
-                  return (
-                    <div key={todo.id} style={{ padding: '10px 12px', borderRadius: 8, border: `1px solid ${pCfg.color}22`, background: `${pCfg.color}05` }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 7 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: pCfg.color, flexShrink: 0, marginTop: 5 }} />
-                        <span style={{ fontSize: 12, color: '#333', lineHeight: 1.5, flex: 1 }}>{todo.text}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 13 }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <Tag style={{ fontSize: 10, margin: 0, color: pCfg.color, borderColor: `${pCfg.color}40`, background: `${pCfg.color}10`, borderRadius: 4 }}>{todo.tag}</Tag>
-                          <span style={{ fontSize: 10, color: '#bbb' }}>{todo.time}</span>
-                        </div>
-                        {/* 上下文跳转按钮 */}
-                        <Button
-                          size="small" type="link"
-                          style={{ fontSize: 11, color: pCfg.color, padding: 0, height: 'auto' }}
-                          onClick={() => { window.location.hash = todo.targetHash; }}
-                        >{todo.action} →</Button>
-                      </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                {EMPLOYEE_STATUS_DATA.map(emp => (
+                  <div key={emp.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, background: emp.status === 'warning' ? '#fffbeb' : emp.status === 'offline' ? '#fafafa' : '#f9fffe', border: `1px solid ${emp.status === 'warning' ? '#fde68a' : emp.status === 'offline' ? '#f0f0f0' : '#d1fae5'}` }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor(emp.status), flexShrink: 0, boxShadow: emp.status === 'online' ? `0 0 0 2px ${statusColor(emp.status)}30` : 'none' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: emp.status === 'offline' ? '#bbb' : '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.name}</div>
+                      <div style={{ fontSize: 10, color: '#bbb' }}>{emp.dept}</div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 快捷入口 */}
-          {isVisible('shortcuts') && (
-            <div style={{ background: '#fff', borderRadius: 12, padding: 18, border: '1px solid #f0f0f0' }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 12 }}>快捷入口</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {[
-                  { icon: '🤖', label: '创建数字员工', desc: '4步完成配置',          action: 'digital-employee-library'  },
-                  { icon: '🗂️', label: '业务域管理',   desc: '配置域与权限隔离',     action: 'digital-employee-domain'   },
-                  { icon: '📦', label: '数字员工库',   desc: '查看所有员工状态',     action: 'digital-employee-library'  },
-                  { icon: '⚡',  label: '工作流资源',  desc: '调用平台已有工作流',   action: 'workflow'                  },
-                  { icon: '🔌', label: 'MCP 接入',     desc: '连接企业内部系统',     action: 'mcp'                       },
-                  { icon: '📊', label: 'Skills 库',    desc: '查看可用技能资源',     action: 'skill'                     },
-                ].map(item => (
-                  <div
-                    key={item.label}
-                    onClick={() => { window.location.hash = item.action; }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 11px', borderRadius: 8, border: '1px solid #e8e8f0', cursor: 'pointer', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#6366F1'; el.style.background = '#fafbff'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#e8e8f0'; el.style.background = '#fff'; }}
-                  >
-                    <span style={{ fontSize: 18 }}>{item.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{item.label}</div>
-                      <div style={{ fontSize: 10, color: '#aaa' }}>{item.desc}</div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: emp.status === 'offline' ? '#ddd' : '#333' }}>{emp.calls}</div>
+                      <div style={{ fontSize: 9, color: emp.rate >= 95 ? '#10B981' : emp.rate >= 90 ? '#F59E0B' : '#EF4444', fontWeight: 600 }}>{emp.rate}%</div>
                     </div>
-                    <ArrowRightOutlined style={{ color: '#d1d5db', fontSize: 11 }} />
+                    <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 6, background: `${statusColor(emp.status)}18`, color: statusColor(emp.status), fontWeight: 600, flexShrink: 0 }}>
+                      {statusLabel(emp.status)}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      {/* ══ 工作台配置 Drawer ══ */}
+      {/* ── 近期事件动态 ── */}
+      {isVisible('events') && (
+        <div style={{ background: '#fff', borderRadius: 14, padding: '18px 20px', border: '1px solid #f0f0f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <FireOutlined style={{ color: '#F59E0B', fontSize: 14 }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>近期事件动态</span>
+            <span style={{ fontSize: 11, color: '#bbb', marginLeft: 4 }}>异常告警 · 任务完成 · 状态变化</span>
+            {RECENT_EVENTS.filter(e => e.type === 'error' || e.type === 'warning').length > 0 && (
+              <span style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 8, background: '#fef2f2', color: '#EF4444', fontWeight: 700, border: '1px solid #fecaca' }}>
+                {RECENT_EVENTS.filter(e => e.type === 'error' || e.type === 'warning').length} 条需关注
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {RECENT_EVENTS.map((ev, idx) => (
+              <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: idx < RECENT_EVENTS.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, paddingTop: 1 }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 8, background: `${eventColor(ev.type)}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: eventColor(ev.type), fontSize: 12 }}>
+                    {eventIcon(ev.type)}
+                  </div>
+                  {idx < RECENT_EVENTS.length - 1 && (
+                    <div style={{ width: 1, height: '100%', minHeight: 8, background: '#f0f0f0', marginTop: 4 }} />
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: '#333', lineHeight: 1.6 }}>{ev.text}</div>
+                </div>
+                <div style={{ fontSize: 11, color: '#bbb', flexShrink: 0, paddingTop: 3 }}>{ev.time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══ 驾驶舱配置 Drawer ══ */}
       <Drawer
-        title={<span style={{ fontSize: 15, fontWeight: 700 }}>工作台配置</span>}
+        title={<span style={{ fontSize: 15, fontWeight: 700 }}>驾驶舱配置</span>}
         open={configOpen}
         onClose={() => setConfigOpen(false)}
         width={420}
@@ -551,7 +361,6 @@ const DigitalEmployeeWorkbench: React.FC = () => {
                     <div style={{ fontSize: 13, fontWeight: 500, color: m.visible ? '#1a1a1a' : '#aaa' }}>{m.label}</div>
                     <div style={{ fontSize: 11, color: '#bbb', marginTop: 1 }}>{m.desc}</div>
                   </div>
-                  {/* 上下移动 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Button size="small" type="text" disabled={idx === 0} onClick={() => moveModule(m.id, -1)} style={{ padding: '0 4px', height: 16, fontSize: 10, color: '#bbb', lineHeight: 1 }}>▲</Button>
                     <Button size="small" type="text" disabled={idx === modules.length - 1} onClick={() => moveModule(m.id, 1)} style={{ padding: '0 4px', height: 16, fontSize: 10, color: '#bbb', lineHeight: 1 }}>▼</Button>
@@ -563,41 +372,6 @@ const DigitalEmployeeWorkbench: React.FC = () => {
           </div>
         </div>
       </Drawer>
-
-      {/* ══ 管理收藏 Modal ══ */}
-      <Modal
-        title={<span style={{ fontSize: 15, fontWeight: 700 }}>管理收藏</span>}
-        open={favModalOpen}
-        onCancel={() => setFavModalOpen(false)}
-        onOk={() => setFavModalOpen(false)}
-        okText="完成"
-        okButtonProps={{ style: { background: '#6366F1', borderColor: '#6366F1' } }}
-        width={480}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Input prefix={<SearchOutlined style={{ color: '#bbb' }} />} placeholder="搜索员工..." value={favSearch} onChange={e => setFavSearch(e.target.value)} style={{ borderRadius: 8 }} allowClear />
-          <div style={{ fontSize: 12, color: '#aaa' }}>已选 {favIds.length} 个 · 点击星标添加/移除收藏</div>
-          <div style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {ALL_EMPLOYEES.filter(e => !favSearch || e.name.includes(favSearch) || e.dept.includes(favSearch)).map(emp => {
-              const isFav = favIds.includes(emp.id);
-              return (
-                <div key={emp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 9, border: `1px solid ${isFav ? '#6366F140' : '#e8e8e8'}`, background: isFav ? '#f5f4ff' : '#fff', cursor: 'pointer' }}
-                  onClick={() => setFavIds(prev => isFav ? prev.filter(id => id !== emp.id) : [...prev, emp.id])}>
-                  <div style={{ width: 36, height: 36, borderRadius: 9, background: getAvatarColor(emp.name), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>{emp.name.charAt(0)}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{emp.name}</div>
-                    <div style={{ fontSize: 11, color: '#aaa' }}>{emp.dept} · {emp.domain}</div>
-                  </div>
-                  <Badge status={emp.status === 'published' ? 'success' : emp.status === 'testing' ? 'processing' : 'default'} />
-                  {isFav
-                    ? <StarFilled style={{ color: '#F59E0B', fontSize: 18 }} />
-                    : <StarOutlined style={{ color: '#d9d9d9', fontSize: 18 }} />}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

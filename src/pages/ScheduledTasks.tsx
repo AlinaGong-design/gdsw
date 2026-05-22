@@ -33,6 +33,7 @@ interface ScheduledTask {
   nextRunAt: string;
   runCount: number;
   successCount: number;
+  source: 'chat' | 'task';
 }
 
 interface TaskRunLog {
@@ -51,43 +52,43 @@ const MOCK_TASKS: ScheduledTask[] = [
     id: 'st-001', name: '每日数据晨报', employeeName: '财务报表助手', employeeId: 'de-003',
     triggerType: 'scheduled', cronExpr: '0 8 * * 1-5', cronDesc: '每天 08:00',
     nlInput: '', taskContent: '拉取昨日销售额、成本、毛利率数据，生成摘要报告并推送到飞书',
-    channel: '飞书', status: 'active', lastRunAt: '2026-04-02 08:00', nextRunAt: '2026-04-03 08:00',
-    runCount: 43, successCount: 43,
+    channel: 'elink', status: 'active', lastRunAt: '2026-04-02 08:00', nextRunAt: '2026-04-03 08:00',
+    runCount: 43, successCount: 43, source: 'task',
   },
   {
     id: 'st-002', name: 'PR 代码审查', employeeName: '代码审查助手', employeeId: 'de-004',
     triggerType: 'event', cronExpr: '', cronDesc: 'GitHub PR 提交时触发',
     nlInput: '', taskContent: '检测到新 PR 时自动执行代码审查，输出质量报告并评论到 PR',
-    channel: 'GitHub', status: 'active', lastRunAt: '2026-04-02 16:32', nextRunAt: '事件触发',
-    runCount: 128, successCount: 121,
+    channel: 'elink', status: 'active', lastRunAt: '2026-04-02 16:32', nextRunAt: '事件触发',
+    runCount: 128, successCount: 121, source: 'chat',
   },
   {
     id: 'st-003', name: '合规周报汇总', employeeName: '法务合规助手', employeeId: 'de-001',
     triggerType: 'scheduled', cronExpr: '0 17 * * 5', cronDesc: '每周星期五 17:00',
     nlInput: '', taskContent: '汇总本周合规检查记录，生成结构化周报，发送给法务负责人',
-    channel: '企业邮件', status: 'active', lastRunAt: '2026-03-28 17:00', nextRunAt: '2026-04-04 17:00',
-    runCount: 12, successCount: 12,
+    channel: '短信', status: 'active', lastRunAt: '2026-03-28 17:00', nextRunAt: '2026-04-04 17:00',
+    runCount: 12, successCount: 12, source: 'task',
   },
   {
     id: 'st-004', name: '简历筛选日报', employeeName: 'HR 招聘助手', employeeId: 'de-002',
     triggerType: 'scheduled', cronExpr: '0 18 * * *', cronDesc: '每天 18:00',
     nlInput: '', taskContent: '统计当日新增简历数量、初筛结果，生成候选人质量分析报告',
-    channel: '钉钉', status: 'paused', lastRunAt: '2026-04-01 18:00', nextRunAt: '—',
-    runCount: 31, successCount: 30,
+    channel: '短信', status: 'paused', lastRunAt: '2026-04-01 18:00', nextRunAt: '—',
+    runCount: 31, successCount: 30, source: 'chat',
   },
   {
     id: 'st-005', name: '系统异常告警', employeeName: '智能巡检助手', employeeId: 'de-008',
     triggerType: 'event', cronExpr: '', cronDesc: '系统监控异常时触发',
     nlInput: '', taskContent: '监控到管道压力异常、设备离线等事件时，自动分析原因并推送告警',
-    channel: '飞书', status: 'active', lastRunAt: '2026-04-02 11:23', nextRunAt: '事件触发',
-    runCount: 7, successCount: 7,
+    channel: 'elink', status: 'active', lastRunAt: '2026-04-02 11:23', nextRunAt: '事件触发',
+    runCount: 7, successCount: 7, source: 'task',
   },
   {
     id: 'st-006', name: '月度绩效汇总', employeeName: '法务合规助手', employeeId: 'de-001',
     triggerType: 'scheduled', cronExpr: '0 9 1 * *', cronDesc: '每月1日 09:00',
     nlInput: '', taskContent: '汇总上月任务完成情况、评分数据，生成绩效分析报告',
-    channel: '系统通知', status: 'draft', lastRunAt: '—', nextRunAt: '2026-05-01 09:00',
-    runCount: 0, successCount: 0,
+    channel: 'elink', status: 'draft', lastRunAt: '—', nextRunAt: '2026-05-01 09:00',
+    runCount: 0, successCount: 0, source: 'chat',
   },
 ];
 
@@ -119,7 +120,7 @@ const EMPLOYEES = [
   { id: 'de-008', name: '智能巡检助手' },
 ];
 
-const CHANNELS = ['飞书', '钉钉', '企业邮件', '系统通知', 'GitHub'];
+const CHANNELS = ['elink', '短信'];
 
 // ─── 执行时间工具 ──────────────────────────────────────────
 
@@ -350,14 +351,14 @@ const TaskCreateDrawer: React.FC<{
   const [taskContent, setTaskContent] = useState('');
   const [employee, setEmployee]       = useState('');
   const [triggerType, setTriggerType] = useState<TriggerType>('scheduled');
-  const [channel, setChannel]         = useState('飞书');
+  const [channel, setChannel]         = useState('elink');
   const [freq, setFreq]               = useState<FreqType>('每天');
   const [day, setDay]                 = useState('');
   const [time, setTime]               = useState('08:00');
 
   const handleClose = () => {
     setTaskName(''); setTaskContent(''); setEmployee('');
-    setTriggerType('scheduled'); setChannel('飞书');
+    setTriggerType('scheduled'); setChannel('elink');
     setFreq('每天'); setDay(''); setTime('08:00');
     onClose();
   };
@@ -624,12 +625,13 @@ const ScheduledTasks: React.FC = () => {
       cronDesc:     partial.cronDesc     || '',
       nlInput:      partial.nlInput      || '',
       taskContent:  partial.taskContent  || '',
-      channel:      partial.channel      || '飞书',
+      channel:      partial.channel      || 'elink',
       status:       'active',
       lastRunAt:    '—',
       nextRunAt:    partial.cronDesc     || '—',
       runCount:     0,
       successCount: 0,
+      source:       'task',
     };
     setTasks(prev => [newTask, ...prev]);
   };
@@ -664,8 +666,24 @@ const ScheduledTasks: React.FC = () => {
     {
       title: '执行规则',
       key: 'rule',
+      width: 180,
       render: (_: any, r: ScheduledTask) => (
         <span style={{ fontSize: 12, color: '#333' }}>{r.cronDesc || '—'}</span>
+      ),
+    },
+    {
+      title: '任务来源',
+      key: 'source',
+      width: 100,
+      render: (_: any, r: ScheduledTask) => (
+        <span style={{
+          fontSize: 11, padding: '2px 8px', borderRadius: 6, fontWeight: 500,
+          background: r.source === 'chat' ? '#eff6ff' : '#f0fdf4',
+          color: r.source === 'chat' ? '#3b82f6' : '#16a34a',
+          border: `1px solid ${r.source === 'chat' ? '#bfdbfe' : '#bbf7d0'}`,
+        }}>
+          {r.source === 'chat' ? '对话创建' : '任务创建'}
+        </span>
       ),
     },
     {
@@ -741,8 +759,8 @@ const ScheduledTasks: React.FC = () => {
       {/* 页头 */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 4 }}>定时任务中心</div>
-          <div style={{ fontSize: 13, color: '#999' }}>管理数字员工的所有自动化任务，支持定时、事件触发方式</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 4 }}>触发任务中心</div>
+          <div style={{ fontSize: 13, color: '#999' }}>管理数字员工的所有自动化任务，支持定时触发、事件触发方式</div>
         </div>
         <Button
           type="primary"

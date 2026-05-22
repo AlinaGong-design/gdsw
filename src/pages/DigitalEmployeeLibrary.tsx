@@ -12,7 +12,9 @@ import {
   ThunderboltOutlined, AppstoreOutlined, UnorderedListOutlined,
   MobileOutlined, LinkOutlined, DesktopOutlined,
   HistoryOutlined, FileTextOutlined, TagOutlined, SaveOutlined, EyeOutlined,
+  RadarChartOutlined,
 } from '@ant-design/icons';
+import DigitalEmployeeProfile from './DigitalEmployeeProfile';
 
 // ─── 类型 ─────────────────────────────────────────────────
 type EmployeeStatus = 'draft' | 'stationed' | 'approving' | 'published' | 'paused' | 'archived';
@@ -37,6 +39,17 @@ interface DigitalEmployeeItem {
 }
 
 // ─── Mock 数据 ────────────────────────────────────────────
+
+// ─── 360度画像 mini 数据 ────────────────────────────────────
+const EMP_360_MINI: Record<string, { score: number; calls: number }> = {
+  'de-001': { score: 4.8, calls: 328 },
+  'de-002': { score: 4.6, calls: 215 },
+  'de-003': { score: 4.9, calls: 89 },
+  'de-004': { score: 4.5, calls: 142 },
+  'de-006': { score: 4.7, calls: 512 },
+  'de-007': { score: 4.3, calls: 173 },
+  'de-008': { score: 4.7, calls: 2156 },
+};
 const MOCK_EMPLOYEES: DigitalEmployeeItem[] = [
   { id: 'de-001', name: '法务合规助手', dept: '法务部',   domain: '法务域', description: '合同审查、合规检查、法律风险评估，支持多种合同模板自动识别与条款提取', status: 'published', version: 'v2.1.0',      scope: 'company', updateTime: '2026-03-10', callCount: 4821, score: 4.8, heat: 95, type: '通用款' },
   { id: 'de-002', name: 'HR 招聘助手',  dept: '人力资源', domain: '人力域', description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入飞书日历',           status: 'published', version: 'v1.3.2',      scope: 'dept',    updateTime: '2026-03-05', callCount: 3256, score: 4.6, heat: 78, type: '定制款' },
@@ -44,7 +57,6 @@ const MOCK_EMPLOYEES: DigitalEmployeeItem[] = [
   { id: 'de-004', name: '代码审查助手', dept: '技术部',   domain: '技术域', description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 GitLab/GitHub',   status: 'paused',    version: 'v1.1.0',      scope: 'dept',    updateTime: '2026-02-28', callCount: 1654, score: 4.5, heat: 62, type: '升级款' },
   { id: 'de-005', name: '智能客服分发', dept: '客户成功', domain: '客服域', description: '意图识别、多轮路由分发、自动记录工单，支持人工接管',                       status: 'draft',     version: 'v0.1.0',      scope: 'private', updateTime: '2026-03-15', callCount: 8923, score: 4.7, heat: 91, type: '通用款' },
   { id: 'de-006', name: '运营数据助手', dept: '运营部',   domain: '运营域', description: '自动汇总运营核心指标，生成日/周/月报告，支持钉钉/飞书推送',               status: 'published', version: 'v1.2.0',      scope: 'company', updateTime: '2026-03-12', callCount: 1243, score: 4.3, heat: 55, type: '定制款' },
-  { id: 'de-007', name: '智能巡检助手', dept: '管道运营部', domain: '管道安全域', description: '整合光纤预警、机器视觉、无人机巡护等多源告警，自动完成预警研判、工单派发与闭环跟踪，覆盖管道安全巡检全流程', status: 'published', version: 'v1.0.0', scope: 'company', updateTime: '2026-03-20', callCount: 2156, score: 4.7, heat: 83, type: '定制款' },
 ];
 
 const MOCK_EMPLOYEE_HISTORY: EmployeeHistoryEvent[] = [
@@ -92,10 +104,10 @@ const TYPE_CONFIG: Record<string, { color: string; bg: string }> = {
   '升级款': { color: '#F59E0B', bg: '#fefce8' },
 };
 
-const DOMAIN_LIST = ['全部', '法务域', '人力域', '财务域', '技术域', '客服域', '运营域', '管道安全域'];
+const DOMAIN_LIST = ['全部', '法务域', '人力域', '财务域', '技术域', '客服域', '运营域'];
 const DOMAIN_COLORS: Record<string, string> = {
   '全部': '#6366F1', '法务域': '#6366F1', '人力域': '#10B981',
-  '财务域': '#F59E0B', '技术域': '#3B82F6', '客服域': '#EC4899', '运营域': '#8B5CF6', '管道安全域': '#EF4444',
+  '财务域': '#F59E0B', '技术域': '#3B82F6', '客服域': '#EC4899', '运营域': '#8B5CF6',
 };
 
 const ORG_TREE = [
@@ -136,20 +148,11 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-const AI_AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#6366F1 0%,#F59E0B 100%)',
-  'linear-gradient(135deg,#3B82F6 0%,#10B981 100%)',
-  'linear-gradient(135deg,#8B5CF6 0%,#EC4899 100%)',
-  'linear-gradient(135deg,#14B8A6 0%,#6366F1 100%)',
-  'linear-gradient(135deg,#EF4444 0%,#F59E0B 100%)',
-  'linear-gradient(135deg,#10B981 0%,#3B82F6 100%)',
-];
-// 根据员工姓名+部门+业务域+职责内容生成渐变头像色
-function getContentGradient(name: string, dept = '', domain = '', desc = ''): string {
-  const combined = name + dept + domain + desc.slice(0, 30);
+// 根据员工姓名生成渐变头像色（与前台对话头像保持一致，使用相同的 AVATAR_COLORS + 名称哈希）
+function getContentGradient(name: string, _dept = '', _domain = '', _desc = ''): string {
   let hash = 0;
-  for (let i = 0; i < combined.length; i++) hash = combined.charCodeAt(i) + ((hash << 5) - hash);
-  return AI_AVATAR_GRADIENTS[Math.abs(hash) % AI_AVATAR_GRADIENTS.length];
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 // ─── 向导配置 ─────────────────────────────────────────────
@@ -548,6 +551,359 @@ interface PickerItem {
   tagBorder?: string;
 }
 
+// ─── 技能文件树数据 ────────────────────────────────────────────────────────────
+interface SkillFileNode {
+  name: string;
+  type: 'file' | 'folder';
+  children?: SkillFileNode[];
+  content?: string;
+}
+interface SkillFileData { rootName: string; nodes: SkillFileNode[]; }
+
+const SKILL_FILE_DATA: Record<string, SkillFileData> = {
+  sk1: {
+    rootName: 'web-search-skill',
+    nodes: [
+      { name: 'evals', type: 'folder', children: [{ name: 'evals.json', type: 'file', content: `[\n  { "query": "最新 AI 发展", "expected_contains": ["2025", "模型"] },\n  { "query": "人民币汇率", "expected_contains": ["中国人民银行"] }\n]` }] },
+      { name: 'references', type: 'folder', children: [
+        { name: 'AGENTS.md', type: 'file', content: `# Agents 配置\n\n本技能使用搜索 Agent，调用外部搜索 API 获取实时数据。\n\n## 工具列表\n- web_search: 互联网全文搜索\n- news_search: 新闻实时搜索` },
+        { name: 'SOUL.md', type: 'file', content: `# 网络搜索助手 Soul\n\n你是一个精准的信息检索专家，擅长从海量互联网内容中提炼核心事实。\n\n## 行为准则\n1. 优先引用权威来源\n2. 注明信息时效性\n3. 对不确定信息标注"待核实"` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: web-search-skill description:** > 实时搜索互联网信息，获取最新资讯与数据。\n\n# 网络搜索技能\n\n你是一个专业的网络搜索助手，能够实时获取互联网信息，为用户提供准确、及时的数据支持。\n\n## 触发条件\n\n当用户询问以下内容时触发此技能：\n\n1. **实时信息**（★ 高优先级）\n   - 最新新闻与时事动态\n   - 股票、汇率、天气等实时数据\n   - 最新政策法规\n\n2. **专业知识查询**（# 参考依据）\n   - 技术文档与标准\n   - 行业报告与白皮书\n   - 学术研究成果\n\n## 输出规范\n\n- 每条结果注明来源 URL\n- 标注信息采集时间\n- 对不确定内容进行说明` },
+    ],
+  },
+  sk2: {
+    rootName: 'feishu-doc-skill',
+    nodes: [
+      { name: 'evals', type: 'folder', children: [{ name: 'evals.json', type: 'file', content: `[\n  { "action": "读取多维表格", "table_id": "mock-001" },\n  { "action": "写入文档", "doc_id": "mock-002", "content": "测试内容" }\n]` }] },
+      { name: 'SKILL.md', type: 'file', content: `**name: feishu-doc-skill description:** > 飞书文档读写与管理，支持多维表格操作。\n\n# 飞书文档技能\n\n你是飞书生态的文档管理专家，能够读取、写入和管理飞书云文档及多维表格。\n\n## 核心能力\n\n1. **文档管理**\n   - 创建、编辑飞书文档\n   - 格式化文本与表格\n   - 管理文档权限\n\n2. **多维表格**\n   - 读写多维表格数据\n   - 执行数据筛选与统计\n   - 批量数据操作\n\n## 权限要求\n\n- 需要飞书 OAuth 授权\n- 读取权限：docs:read\n- 写入权限：docs:write` },
+      { name: 'SOUL.md', type: 'file', content: `# 飞书文档助手 Soul\n\n你是飞书生态的熟练使用者，了解飞书文档的所有功能与限制。\n\n## 工作原则\n1. 操��前确认权限\n2. 批量操作前进行小样本测试\n3. 写入操作必须获得用户确认` },
+    ],
+  },
+  sk3: {
+    rootName: 'python-exec-skill',
+    nodes: [
+      { name: 'sandbox', type: 'folder', children: [
+        { name: 'runner.py', type: 'file', content: `import subprocess, sys\n\ndef run_safe(code: str, timeout: int = 30) -> dict:\n    """在沙箱中安全执行 Python 代码"""\n    result = subprocess.run(\n        [sys.executable, '-c', code],\n        capture_output=True, text=True, timeout=timeout\n    )\n    return {'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode}` },
+        { name: 'requirements.txt', type: 'file', content: `pandas==2.0.3\nnumpy==1.24.3\nmatplotlib==3.7.1\nscikit-learn==1.3.0` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: python-exec-skill description:** > 执行 Python 代码，处理结构化数据与自动化任务。\n\n# Python 执行技能\n\n你是一名专业的 Python 数据工程师，能够在安全沙箱中执行 Python 代码。\n\n## 支持场景\n\n1. **数据处理与分析**\n   - Pandas 数据清洗与转换\n   - NumPy 数值计算\n   - 统计分析与可视化\n\n2. **自动化任务**\n   - 文件批处理\n   - 数据格式转换（CSV/JSON/Excel）\n   - 定时报告生成\n\n## 安全限制\n\n- 禁止网络访问（除白名单域名）\n- 禁止文件系统写入（/tmp 除外）\n- 最大执行时间：30 秒\n- 最大内存占用：512 MB` },
+      { name: 'SOUL.md', type: 'file', content: `# Python 执行助手 Soul\n\n你是严谨的数据工程师，代码质量第一。\n\n## 编码规范\n1. 添加必要注释\n2. 异常处理完整\n3. 执行前分析潜在风险` },
+    ],
+  },
+  sk4: {
+    rootName: 'pdf-parser-skill',
+    nodes: [
+      { name: 'templates', type: 'folder', children: [
+        { name: 'extract_prompt.md', type: 'file', content: `# PDF 提取提示词模板\n\n请从以下 PDF 内容中提取：\n1. 文档标题与作者\n2. 核心章节结构\n3. 关键数据与表格\n4. 重要结论` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: pdf-parser-skill description:** > 解析 PDF 文档内容，提取文字、表格与结构化信息。\n\n# PDF 解析技能\n\n你是专业的文档解析专家，能够准确提取 PDF 中的文字、表格和结构化信息。\n\n## 解析能力\n\n1. **文字提取**（★ 核心能力）\n   - 多语言文字识别\n   - 跨页内容合并\n   - 保留原始格式\n\n2. **表格识别**（# 结构化输出）\n   - 自动识别表格边界\n   - 输出为 Markdown / JSON 格式\n   - 处理合并单元格\n\n## 支持格式\n\n- PDF 1.0 - 2.0\n- 扫描件（需 OCR 支持）\n- 加密 PDF（需密码）` },
+    ],
+  },
+  'sk-d1': {
+    rootName: 'chart-gen-skill',
+    nodes: [
+      { name: 'chart_types', type: 'folder', children: [
+        { name: 'bar.md', type: 'file', content: `# 柱状图\n\n适用场景：分类数据对比\n\n参数：\n- x: 分类字段名\n- y: 数值字段名\n- title: 图表标题` },
+        { name: 'line.md', type: 'file', content: `# 折线图\n\n适用场景：时序数据趋势\n\n参数：\n- x: 时间字段（支持日期格式）\n- y: 数值字段（支持多系列）` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: chart-gen-skill description:** > 将结构化数据转换为可视化图表（柱/折/饼/散点图）。\n\n# 图表生成技能\n\n你是数据可视化专家，能够将原始数据转换为清晰直观的图表。\n\n## 支持图表类型\n\n1. **基础图表**\n   - 柱状图（分类对比）\n   - 折线图（时序趋势）\n   - 饼图（占比分布）\n   - 散点图（相关性分析）\n\n2. **高级图表**\n   - 热力图\n   - 瀑布图\n   - 桑基图\n\n## 输入格式\n\n支持 JSON、CSV、Markdown 表格格式的数据输入。` },
+    ],
+  },
+  'sk-d2': {
+    rootName: 'sql-query-skill',
+    nodes: [
+      { name: 'dialects', type: 'folder', children: [
+        { name: 'mysql.md', type: 'file', content: `# MySQL 方言支持\n\n支持版本：5.7, 8.0\n\n特殊语法：\n- GROUP_CONCAT\n- JSON_EXTRACT\n- 窗口函数（8.0+）` },
+        { name: 'postgresql.md', type: 'file', content: `# PostgreSQL 方言支持\n\n支持版本：12+\n\n特殊语法：\n- JSONB 操作\n- CTE (WITH)\n- 窗口函数` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: sql-query-skill description:** > 自然语言转 SQL，查询并汇总关系型数据库数据。\n\n# SQL 查询技能\n\n你是数据库查询专家，能够将自然语言需求转换为精确的 SQL 查询语句。\n\n## 核心能力\n\n1. **NL2SQL 转换**（★ 高优先级）\n   - 理解业务语义\n   - 生成高效 SQL\n   - 支持复杂多表关联\n\n2. **查询优化**\n   - 索引使用建议\n   - 执行计划分析\n   - 大数据量分页处理\n\n## 支持数据库\n\n- MySQL 5.7 / 8.0\n- PostgreSQL 12+\n- SQLite\n- Hive / Spark SQL` },
+    ],
+  },
+  'sk-of2': {
+    rootName: 'excel-skill',
+    nodes: [
+      { name: 'templates', type: 'folder', children: [
+        { name: 'financial_report.xlsx.md', type: 'file', content: `# 财务报表模板\n\n## 工作表结构\n- Sheet1: 损益表\n- Sheet2: 资产负债表\n- Sheet3: 现金流量表\n\n## 关键公式\n- 净利润 = 营收 - 成本 - 费用\n- 流动比率 = 流动资产 / 流动负债` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: excel-skill description:** > 读写 Excel，执行数据分析、透视表与图表生成。\n\n# Excel 数据技能\n\n你是 Excel 数据处理专家，能够读写 Excel 文件并执行复杂数据分析。\n\n## 核心功能\n\n1. **数据读写**\n   - 读取多工作表数据\n   - 写入格式化报表\n   - 处理大型数据集（10万行+）\n\n2. **数据分析**\n   - 数据透视表创建\n   - 公式与函数计算\n   - 条件格式化\n\n3. **图表生成**\n   - 内嵌图表创建\n   - 自动更新数据图表` },
+    ],
+  },
+  sk5: {
+    rootName: 'content-review-workflow',
+    nodes: [
+      { name: 'nodes', type: 'folder', children: [
+        { name: 'sensitivity_check.md', type: 'file', content: `# 敏感词检测节点\n\n## 功能\n对输入内容进行敏感词扫描。\n\n## 输入\n- content: string (待检测文本)\n\n## 输出\n- passed: boolean\n- hits: string[] (命中词列表)` },
+        { name: 'human_review.md', type: 'file', content: `# 人工审核节点\n\n## 触发条件\n敏感词检测未通过时进入人工审核。\n\n## 审核人\n- 一审：内容运营\n- 二审：合规专员（高风险内容）` },
+      ]},
+      { name: 'SKILL.md', type: 'file', content: `**name: content-review-workflow description:** > 多节点内容合规审查工作流。\n\n# 内容审核流程\n\n你负责执行标准化的内容合规审查流程，确保所有输出内容符合合规要求。\n\n## 流程节点\n\n1. **自动检测**（★ 自动执行）\n   - 敏感词过滤\n   - 违规图片检测\n   - 合规性预判\n\n2. **人工复核**（# 条件触发）\n   - 高风险内容人工审核\n   - 边界案例专项处理\n   - 申诉处理机制\n\n3. **结果输出**\n   - 通过：直接发布\n   - 拒绝：返回修改意见\n   - 待审：进入人工队列\n\n## SLA 要求\n\n- 自动审核：< 3 秒\n- 人工审核：< 4 小时` },
+    ],
+  },
+};
+
+// 默认文件树（技能无特定文件时显示）
+const DEFAULT_SKILL_FILES = (skillName: string): SkillFileData => ({
+  rootName: skillName.toLowerCase().replace(/\s+/g, '-') + '-skill',
+  nodes: [
+    { name: 'evals', type: 'folder', children: [{ name: 'evals.json', type: 'file', content: `[\n  { "case": "基础功能测试", "status": "passed" },\n  { "case": "边界条件测试", "status": "passed" }\n]` }] },
+    { name: 'SKILL.md', type: 'file', content: `**name: ${skillName.toLowerCase().replace(/\s+/g, '-')}-skill**\n\n# ${skillName}\n\n本技能提供 ${skillName} 相关功能支持。\n\n## 核心能力\n\n1. 自动识别相关任务\n2. 智能处理与执行\n3. 结果验证与输出\n\n## 使用说明\n\n- 在对话中直接描述需求即可触发\n- 支持批量处理模式` },
+    { name: 'SOUL.md', type: 'file', content: `# ${skillName} Soul\n\n专注、高效、准确是本技能的核心理念。` },
+  ],
+});
+
+// ─── 简易 Markdown 渲染器 ─────────────────────────────────────────────────────
+function renderMarkdown(md: string): React.ReactNode {
+  const lines = md.split('\n');
+  const elements: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.startsWith('# ')) {
+      elements.push(<div key={i} style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a', marginBottom: 12, marginTop: i > 0 ? 20 : 0, lineHeight: 1.3 }}>{renderInline(line.slice(2))}</div>);
+    } else if (line.startsWith('## ')) {
+      elements.push(<div key={i} style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 8, marginTop: 18, lineHeight: 1.4, borderBottom: '1px solid #f0f0f0', paddingBottom: 6 }}>{renderInline(line.slice(3))}</div>);
+    } else if (line.startsWith('### ')) {
+      elements.push(<div key={i} style={{ fontSize: 14, fontWeight: 600, color: '#333', marginBottom: 6, marginTop: 14 }}>{renderInline(line.slice(4))}</div>);
+    } else if (/^\d+\.\s/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(<li key={i} style={{ marginBottom: 4 }}>{renderInline(lines[i].replace(/^\d+\.\s/, ''))}</li>);
+        i++;
+      }
+      elements.push(<ol key={`ol-${i}`} style={{ paddingLeft: 20, margin: '6px 0', fontSize: 14, color: '#333', lineHeight: 1.7 }}>{items}</ol>);
+      continue;
+    } else if (line.startsWith('   - ') || line.startsWith('  - ')) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && (lines[i].startsWith('   - ') || lines[i].startsWith('  - '))) {
+        const txt = lines[i].replace(/^\s+- /, '');
+        items.push(<li key={i} style={{ marginBottom: 3 }}>{renderInline(txt)}</li>);
+        i++;
+      }
+      elements.push(<ul key={`ul-sub-${i}`} style={{ paddingLeft: 28, margin: '3px 0', fontSize: 13, color: '#555', lineHeight: 1.7, listStyleType: 'circle' }}>{items}</ul>);
+      continue;
+    } else if (line.startsWith('- ')) {
+      const items: React.ReactNode[] = [];
+      while (i < lines.length && lines[i].startsWith('- ')) {
+        items.push(<li key={i} style={{ marginBottom: 4 }}>{renderInline(lines[i].slice(2))}</li>);
+        i++;
+      }
+      elements.push(<ul key={`ul-${i}`} style={{ paddingLeft: 20, margin: '6px 0', fontSize: 14, color: '#333', lineHeight: 1.7 }}>{items}</ul>);
+      continue;
+    } else if (line.startsWith('```')) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <pre key={i} style={{ background: '#f6f8fa', borderRadius: 6, padding: '10px 14px', fontSize: 12, color: '#24292e', overflowX: 'auto', margin: '8px 0', fontFamily: 'monospace', lineHeight: 1.6, border: '1px solid #e8e8e8' }}>
+          <code>{codeLines.join('\n')}</code>
+        </pre>
+      );
+    } else if (line.trim() === '') {
+      elements.push(<div key={i} style={{ height: 6 }} />);
+    } else {
+      elements.push(<p key={i} style={{ fontSize: 14, color: '#333', lineHeight: 1.8, margin: '4px 0' }}>{renderInline(line)}</p>);
+    }
+    i++;
+  }
+  return <>{elements}</>;
+}
+
+function renderInline(text: string): React.ReactNode {
+  // bold **text**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((p, i) => p.startsWith('**') && p.endsWith('**')
+    ? <strong key={i} style={{ fontWeight: 700 }}>{p.slice(2, -2)}</strong>
+    : <span key={i}>{p}</span>
+  )}</>;
+}
+
+// ─── 技能文件查看器 ────────────────────────────────────────────────────────────
+const SkillFileViewer: React.FC<{
+  skillId: string;
+  skillName: string;
+  skillIcon: string;
+  open: boolean;
+  onClose: () => void;
+}> = ({ skillId, skillName, skillIcon, open, onClose }) => {
+  const fileData = SKILL_FILE_DATA[skillId] ?? DEFAULT_SKILL_FILES(skillName);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['root', fileData.rootName]));
+  const [activeFile, setActiveFile] = useState<{ name: string; content: string } | null>(null);
+  const [previewMode, setPreviewMode] = useState<'preview' | 'source'>('preview');
+
+  // 自动展开第一个文件
+  React.useEffect(() => {
+    if (!open) return;
+    setExpandedFolders(new Set(['root', fileData.rootName]));
+    // 找第一个 SKILL.md
+    const findFirst = (nodes: SkillFileNode[]): { name: string; content: string } | null => {
+      for (const n of nodes) {
+        if (n.type === 'file' && n.name === 'SKILL.md') return { name: n.name, content: n.content || '' };
+      }
+      for (const n of nodes) {
+        if (n.type === 'file') return { name: n.name, content: n.content || '' };
+      }
+      return null;
+    };
+    setActiveFile(findFirst(fileData.nodes));
+    setPreviewMode('preview');
+  }, [open, skillId]);
+
+  const toggleFolder = (path: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      next.has(path) ? next.delete(path) : next.add(path);
+      return next;
+    });
+  };
+
+  const renderTree = (nodes: SkillFileNode[], depth = 0, parentPath = 'root'): React.ReactNode => (
+    <>
+      {nodes.map((node) => {
+        const path = `${parentPath}/${node.name}`;
+        const isExpanded = expandedFolders.has(path);
+        const isActive = activeFile?.name === node.name;
+        if (node.type === 'folder') {
+          return (
+            <div key={path}>
+              <div
+                onClick={() => toggleFolder(path)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', paddingLeft: 8 + depth * 14, cursor: 'pointer', borderRadius: 4, fontSize: 12, color: '#374151', userSelect: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f3f4f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+              >
+                <span style={{ fontSize: 10, color: '#9ca3af', width: 10, flexShrink: 0 }}>{isExpanded ? '▼' : '▶'}</span>
+                <span style={{ fontSize: 13 }}>📁</span>
+                <span style={{ fontWeight: 500 }}>{node.name}</span>
+              </div>
+              {isExpanded && node.children && renderTree(node.children, depth + 1, path)}
+            </div>
+          );
+        }
+        const isJson = node.name.endsWith('.json');
+        const isPy   = node.name.endsWith('.py');
+        const isMd   = node.name.endsWith('.md');
+        const fileIcon = isJson ? '🔧' : isPy ? '🐍' : isMd ? '📄' : '📃';
+        return (
+          <div
+            key={path}
+            onClick={() => { setActiveFile({ name: node.name, content: node.content || '' }); setPreviewMode('preview'); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', paddingLeft: 8 + depth * 14, cursor: 'pointer', borderRadius: 4, fontSize: 12, color: '#374151', background: isActive ? '#EEF2FF' : 'transparent', fontWeight: isActive ? 500 : 400, userSelect: 'none' }}
+            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.background = '#f3f4f6'; }}
+            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+          >
+            <span style={{ width: 10, flexShrink: 0 }} />
+            <span style={{ fontSize: 13 }}>{fileIcon}</span>
+            <span style={{ color: isActive ? '#6366F1' : '#374151' }}>{node.name}</span>
+          </div>
+        );
+      })}
+    </>
+  );
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={1000}
+      centered
+      title={null}
+      styles={{ body: { padding: 0 } }}
+      style={{ borderRadius: 12, overflow: 'hidden', padding: 0 }}
+    >
+      {/* ── 顶部工具栏 ── */}
+      <div style={{ height: 48, background: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 18 }}>{skillIcon}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>{skillName}</span>
+          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#EEF2FF', color: '#6366F1', border: '1px solid #c7d2fe' }}>只读</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', fontSize: 13 }} title="文件目录">📁</div>
+          <div style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6b7280', fontSize: 13 }} title="函数">ƒx</div>
+        </div>
+      </div>
+
+      {/* ── 主体：左树 + 右内容 ── */}
+      <div style={{ display: 'flex', height: 600 }}>
+
+        {/* 左侧：文件目录 */}
+        <div style={{ width: 260, flexShrink: 0, borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', background: '#fafafa' }}>
+          <div style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>文件目录</span>
+            <span style={{ fontSize: 14, color: '#9ca3af', cursor: 'pointer' }} title="下载">⬇</span>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '8px 4px' }}>
+            {/* 根目录 */}
+            <div>
+              <div
+                onClick={() => toggleFolder(fileData.rootName)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', cursor: 'pointer', borderRadius: 4, fontSize: 12, color: '#374151', userSelect: 'none' }}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#f3f4f6'}
+                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+              >
+                <span style={{ fontSize: 10, color: '#9ca3af', width: 10 }}>{expandedFolders.has(fileData.rootName) ? '▼' : '▶'}</span>
+                <span style={{ fontSize: 13 }}>📁</span>
+                <span style={{ fontWeight: 600, color: '#374151' }}>{fileData.rootName}</span>
+              </div>
+              {expandedFolders.has(fileData.rootName) && renderTree(fileData.nodes, 1, fileData.rootName)}
+            </div>
+          </div>
+        </div>
+
+        {/* 右侧：内容区 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Tab 栏 */}
+          <div style={{ height: 40, display: 'flex', alignItems: 'center', borderBottom: '1px solid #e5e7eb', background: '#fff', flexShrink: 0, padding: '0 4px' }}>
+            <div
+              onClick={() => setPreviewMode('preview')}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 14px', height: '100%', cursor: 'pointer', fontSize: 12, color: previewMode === 'preview' ? '#6366F1' : '#6b7280', borderBottom: previewMode === 'preview' ? '2px solid #6366F1' : '2px solid transparent', fontWeight: previewMode === 'preview' ? 600 : 400 }}
+            >
+              <span>▤</span> 预览
+            </div>
+            {activeFile && (
+              <div
+                onClick={() => setPreviewMode('source')}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 14px', height: '100%', cursor: 'pointer', fontSize: 12, color: previewMode === 'source' ? '#6366F1' : '#6b7280', borderBottom: previewMode === 'source' ? '2px solid #6366F1' : '2px solid transparent', fontWeight: previewMode === 'source' ? 600 : 400 }}
+              >
+                <span style={{ fontSize: 11 }}>&lt;/&gt;</span> {activeFile.name}
+              </div>
+            )}
+          </div>
+
+          {/* 文件头 */}
+          {activeFile && (
+            <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid #f3f4f6', background: '#fff', flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{activeFile.name}</span>
+            </div>
+          )}
+
+          {/* 内容 */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', background: '#fff' }}>
+            {!activeFile ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 13 }}>
+                点击左侧文件查看内容
+              </div>
+            ) : previewMode === 'source' ? (
+              <pre style={{ fontSize: 12, color: '#374151', fontFamily: 'monospace', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
+                {activeFile.content}
+              </pre>
+            ) : (
+              <div style={{ maxWidth: 700 }}>
+                {renderMarkdown(activeFile.content)}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 const PickerSection: React.FC<{
   title: string;
   desc?: string;
@@ -562,6 +918,7 @@ const PickerSection: React.FC<{
 }> = ({ title, desc, modalTitle, items, selectedIds, onAdd, onRemove, accentColor = '#6366F1', linkText, onLink }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch]       = useState('');
+  const [viewingSkill, setViewingSkill] = useState<{ id: string; name: string; icon: string } | null>(null);
 
   const selectedItems   = items.filter(i => selectedIds.includes(i.id));
   const availableItems  = items.filter(i => !selectedIds.includes(i.id)).filter(i =>
@@ -594,7 +951,13 @@ const PickerSection: React.FC<{
               <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{item.name}</span>
+                  <span
+                    style={{ fontSize: 12, fontWeight: 500, color: '#6366F1', cursor: 'pointer' }}
+                    title="点击查看技能文件"
+                    onClick={() => setViewingSkill({ id: item.id, name: item.name, icon: String(item.icon) })}
+                    onMouseEnter={e => (e.currentTarget as HTMLSpanElement).style.textDecoration = 'underline'}
+                    onMouseLeave={e => (e.currentTarget as HTMLSpanElement).style.textDecoration = 'none'}
+                  >{item.name}</span>
                   {item.tag && (
                     <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, color: item.tagColor ?? accentColor, background: item.tagBg ?? `${accentColor}10`, border: `1px solid ${item.tagBorder ?? `${accentColor}30`}` }}>{item.tag}</span>
                   )}
@@ -641,24 +1004,34 @@ const PickerSection: React.FC<{
         ) : (
           <div style={{ border: '1px solid #f0f0f0', borderRadius: 10, overflow: 'hidden', maxHeight: 360, overflowY: 'auto' }}>
             {availableItems.map((item, idx) => (
-              <div
-                key={item.id}
-                onClick={() => { onAdd(item.id); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: idx < availableItems.length - 1 ? '1px solid #f5f5f5' : 'none', cursor: 'pointer', transition: 'background 0.12s' }}
+              <div key={item.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: idx < availableItems.length - 1 ? '1px solid #f5f5f5' : 'none', transition: 'background 0.12s' }}
                 onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = `${accentColor}06`}
                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
               >
                 <span style={{ fontSize: 18, flexShrink: 0 }}>{item.icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 1 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{item.name}</span>
+                    <span
+                      style={{ fontSize: 13, fontWeight: 500, color: '#6366F1', cursor: 'pointer' }}
+                      title="点击查看技能文件"
+                      onClick={e => { e.stopPropagation(); setViewingSkill({ id: item.id, name: item.name, icon: String(item.icon) }); }}
+                      onMouseEnter={e => (e.currentTarget as HTMLSpanElement).style.textDecoration = 'underline'}
+                      onMouseLeave={e => (e.currentTarget as HTMLSpanElement).style.textDecoration = 'none'}
+                    >{item.name}</span>
                     {item.tag && (
                       <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 4, color: item.tagColor ?? accentColor, background: item.tagBg ?? `${accentColor}10`, border: `1px solid ${item.tagBorder ?? `${accentColor}30`}` }}>{item.tag}</span>
                     )}
                   </div>
                   <div style={{ fontSize: 11, color: '#999' }}>{item.desc}</div>
                 </div>
-                <span style={{ fontSize: 20, color: accentColor, fontWeight: 300, flexShrink: 0 }}>＋</span>
+                <span
+                  onClick={() => onAdd(item.id)}
+                  style={{ fontSize: 20, color: accentColor, fontWeight: 300, flexShrink: 0, cursor: 'pointer', padding: '4px 6px', borderRadius: 6 }}
+                  onMouseEnter={e => (e.currentTarget as HTMLSpanElement).style.background = `${accentColor}12`}
+                  onMouseLeave={e => (e.currentTarget as HTMLSpanElement).style.background = 'transparent'}
+                  title="添加"
+                >＋</span>
               </div>
             ))}
           </div>
@@ -679,6 +1052,15 @@ const PickerSection: React.FC<{
           )}
         </div>
       </Modal>
+      {viewingSkill && (
+        <SkillFileViewer
+          skillId={viewingSkill.id}
+          skillName={viewingSkill.name}
+          skillIcon={viewingSkill.icon}
+          open={!!viewingSkill}
+          onClose={() => setViewingSkill(null)}
+        />
+      )}
     </div>
   );
 };
@@ -701,7 +1083,7 @@ const VersionViewBanner: React.FC<{
     <span>
       当前浏览的是历史版本&nbsp;
       <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#b45309' }}>{version}</span>
-      {publishedAt && <>，定岗于&nbsp;<span style={{ fontWeight: 600 }}>{publishedAt}</span></>}
+      {publishedAt && <>，备岗于&nbsp;<span style={{ fontWeight: 600 }}>{publishedAt}</span></>}
       {publishedBy && <>，由&nbsp;<span style={{ fontWeight: 600 }}>{publishedBy}</span>&nbsp;提交</>}
     </span>
     <span
@@ -1247,7 +1629,7 @@ const EmployeeConfigPage: React.FC<{
             <Button type="primary" icon={<TagOutlined />}
               style={{ background: '#6366F1', borderColor: '#6366F1', borderRadius: 8, fontWeight: 600 }}
               onClick={() => setEmpPublishOpen(true)}>
-              定岗
+              备岗
             </Button>
           )}
         </div>
@@ -1412,7 +1794,6 @@ const EmployeeConfigPage: React.FC<{
                       }}
                     >
                       <PlusOutlined style={{ fontSize: 11 }} />
-                      新增任务
                     </div>
                     {tasks.length > 0 && (
                       <span onClick={() => setTasks([])} style={{ fontSize: 11, color: '#bbb', cursor: 'pointer', userSelect: 'none' }}>清空</span>
@@ -1663,7 +2044,7 @@ const EmployeeConfigPage: React.FC<{
                   {[
                     { id: 'api',    label: 'REST API',  desc: '标准 HTTP 接口，支持外部系统程序化调用', icon: <ApiOutlined /> },
                     { id: 'h5',     label: 'H5 网页',   desc: '适配电脑/移动端，浏览器直接访问，无需安装', icon: <DesktopOutlined /> },
-                    { id: 'feishu', label: '飞书接入',  desc: '以飞书机器人形式在群组/会话中提供服务', icon: <span style={{ fontSize: 15 }}>🪶</span> },
+                    { id: 'feishu', label: '飞书机器人',  desc: '以飞书机器人形式在群组/会话中提供服务', icon: <span style={{ fontSize: 15 }}>🪶</span> },
                   ].map(ch => {
                     const selected = data.channels.includes(ch.id);
                     return (
@@ -1756,7 +2137,7 @@ const EmployeeConfigPage: React.FC<{
           {/* 调试预览 */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '8px 20px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>调试预览</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#555' }}>配置预览</span>
               <span style={{ fontSize: 11, color: '#bbb' }}>· 管理员工工作区、工具和身份</span>
             </div>
             {/* 对话消息区 */}
@@ -1877,7 +2258,7 @@ const EmployeeConfigPage: React.FC<{
           } else {
             onClose();
           }
-          message.success(`数字员工「${data.name || '新员工'}」已定岗，版本 ${version}`);
+          message.success(`数字员工「${data.name || '新员工'}」已备岗，版本 ${version}`);
         }}
       />
 
@@ -1912,7 +2293,7 @@ const EmployeeConfigPage: React.FC<{
             </div>
           </div>
 
-          {/* ── 历史版本列表（仅定岗版本） ── */}
+          {/* ── 历史版本列表（仅备岗版本） ── */}
           {[...MOCK_EMPLOYEE_HISTORY].filter(ev => ev.kind === 'publish' && ev.version).reverse().map((ev, idx, arr) => {
             const ver = ev.version!;
             const isLast = idx === arr.length - 1;
@@ -1932,10 +2313,10 @@ const EmployeeConfigPage: React.FC<{
                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F1F3F9'}
                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB'}
                   >
-                    {/* 版本号 + 正式定岗 + 时间 */}
+                    {/* 版本号 + 正式备岗 + 时间 */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: ver.changelog ? 10 : 12 }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: '#111', fontFamily: 'monospace' }}>{ver.version}</span>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#EDE9FE', color: '#6D28D9', fontWeight: 600 }}>正式定岗</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#EDE9FE', color: '#6D28D9', fontWeight: 600 }}>正式备岗</span>
                       <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{ver.publishedAt}</span>
                     </div>
                     {/* 变更日志 */}
@@ -1991,7 +2372,7 @@ const EmployeeConfigPage: React.FC<{
                 if (!inlineRollbackTarget) return;
                 setInlineRollbackTarget(null);
                 setHistoryOpen(false);
-                message.success(`已回滚至 ${inlineRollbackTarget.version}，成为新草稿，请重新定岗上岗`);
+                message.success(`已回滚至 ${inlineRollbackTarget.version}，成为新草稿，请重新备岗上岗`);
               }}
             >确 定</Button>
           </div>
@@ -2010,7 +2391,7 @@ const EmployeeConfigPage: React.FC<{
 };
 
 
-// ─── 定岗 Modal ─────────────────────────────────────────────
+// ─── 备岗 Modal ─────────────────────────────────────────────
 const PublishVersionModal: React.FC<{
   open: boolean;
   latestVersion: string;
@@ -2044,8 +2425,8 @@ const PublishVersionModal: React.FC<{
             <TagOutlined style={{ color: '#6366F1', fontSize: 20 }} />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a1a' }}>定岗</div>
-            <div style={{ fontWeight: 400, fontSize: 13, color: '#888', marginTop: 2 }}>定岗后员工进入待上岗状态，可进一步申请上岗审批。</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a1a' }}>备岗</div>
+            <div style={{ fontWeight: 400, fontSize: 13, color: '#888', marginTop: 2 }}>备岗后员工进入待上岗状态，可进一步申请上岗审批。</div>
           </div>
         </div>
       }
@@ -2053,7 +2434,7 @@ const PublishVersionModal: React.FC<{
       onCancel={onClose}
       footer={
         <Space>
-          <Button type="primary" onClick={handleConfirm} style={{ background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', border: 'none', minWidth: 96 }}>确认定岗</Button>
+          <Button type="primary" onClick={handleConfirm} style={{ background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)', border: 'none', minWidth: 96 }}>确认备岗</Button>
         </Space>
       }
       width={520}
@@ -2381,10 +2762,10 @@ const VersionDrawer: React.FC<{
                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F1F3F9'}
                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB'}
                   >
-                    {/* 版本号 + 正式定岗 + 时间 */}
+                    {/* 版本号 + 正式备岗 + 时间 */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: ver.changelog ? 10 : 12 }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: '#111', fontFamily: 'monospace' }}>{ver.version}</span>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#EDE9FE', color: '#6D28D9', fontWeight: 600 }}>正式定岗</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: '#EDE9FE', color: '#6D28D9', fontWeight: 600 }}>正式备岗</span>
                       <span style={{ marginLeft: 'auto', fontSize: 12, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{ver.publishedAt}</span>
                     </div>
 
@@ -2550,34 +2931,34 @@ const ApiKeySection: React.FC = () => {
       {/* 表格 */}
       <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
         {/* 表头 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 2.2fr 1fr 1fr 1fr 1.4fr', background: '#F9FAFB', borderBottom: '1px solid #e5e7eb' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '220px 180px 100px 100px 90px 120px', background: '#F9FAFB', borderBottom: '1px solid #e5e7eb' }}>
           {['Token', '创建时间', '有效期', '是否过期', '状态', '操作'].map(col => (
-            <div key={col} style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: '#374151' }}>{col}</div>
+            <div key={col} style={{ padding: '10px 14px', fontSize: 13, fontWeight: 600, color: '#374151' }}>{col}</div>
           ))}
         </div>
         {/* 数据行 */}
         {pageKeys.map((k, idx) => {
           const vcfg = VALIDITY_CFG[k.validity] ?? { color: '#6B7280', bg: '#F3F4F6' };
           return (
-            <div key={k.id} style={{ display: 'grid', gridTemplateColumns: '2fr 2.2fr 1fr 1fr 1fr 1.4fr', borderBottom: idx < pageKeys.length - 1 ? '1px solid #f0f0f0' : 'none', background: '#fff', alignItems: 'center' }}>
-              <div style={{ padding: '11px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div key={k.id} style={{ display: 'grid', gridTemplateColumns: '220px 180px 100px 100px 90px 120px', borderBottom: idx < pageKeys.length - 1 ? '1px solid #f0f0f0' : 'none', background: '#fff', alignItems: 'center' }}>
+              <div style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#374151' }}>{k.token}</span>
                 <CopyOutlined style={{ fontSize: 12, color: '#9ca3af', cursor: 'pointer', flexShrink: 0 }} onClick={() => message.success('已复制')} />
               </div>
-              <div style={{ padding: '11px 12px', fontSize: 12, color: '#6B7280' }}>{k.createdAt}</div>
-              <div style={{ padding: '11px 12px' }}>
+              <div style={{ padding: '11px 14px', fontSize: 12, color: '#6B7280' }}>{k.createdAt}</div>
+              <div style={{ padding: '11px 14px' }}>
                 <span style={{ padding: '2px 9px', borderRadius: 6, fontSize: 12, fontWeight: 500, color: vcfg.color, background: vcfg.bg }}>{k.validity}</span>
               </div>
-              <div style={{ padding: '11px 12px' }}>
+              <div style={{ padding: '11px 14px' }}>
                 <span style={{ padding: '2px 9px', borderRadius: 6, fontSize: 12, fontWeight: 500, color: k.expired ? '#DC2626' : '#D97706', background: k.expired ? '#FEF2F2' : '#FFFBEB' }}>
                   {k.expired ? '已过期' : '未过期'}
                 </span>
               </div>
-              <div style={{ padding: '11px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: k.enabled ? '#10B981' : '#9ca3af', display: 'inline-block', flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: '#374151' }}>{k.enabled ? '正常' : '停用'}</span>
               </div>
-              <div style={{ padding: '11px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Switch
                   checked={k.enabled}
                   onChange={() => toggleKey(k.id)}
@@ -2619,8 +3000,11 @@ const DigitalEmployeeLibrary: React.FC = () => {
     return () => { unsub(); };
   }, []);
 
-  // 管理员模式（演示用，实际应从 Auth 系统获取）
-  const [isAdmin, setIsAdmin] = useState(false);
+  // 管理员模式（固定为管理员）
+  const isAdmin = true;
+
+  // 360画像弹窗
+  const [profile360Open, setProfile360Open] = useState(false);
 
   // 将 Store 数据映射到本页面的 DigitalEmployeeItem 格式
   const storeEmployees = employeeStore.getEmployees();
@@ -2639,7 +3023,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [domainFilter, setDomainFilter] = useState('全部');
   const [createWizardOpen, setCreateWizardOpen]   = useState(false);
-  const [createTab, setCreateTab]                 = useState<'blank' | 'ai'>('blank');
+  const [createTab, setCreateTab]                 = useState<'blank'>('blank');
   // 空白创建表单
   const [newEmpName, setNewEmpName]               = useState('');
   const [newEmpDesc, setNewEmpDesc]               = useState('');
@@ -2648,9 +3032,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate]   = useState<string | null>(null);
   const [aiDescLoading, setAiDescLoading]         = useState(false);
   const [aiAvatarLoading, setAiAvatarLoading]     = useState(false);
-  // AI 创建 tab
-  const [aiCreateInput, setAiCreateInput]         = useState('');
-  const [aiCreateLoading, setAiCreateLoading]     = useState(false);
+  // AI 创建 tab (removed)
   const avatarFileRef = React.useRef<HTMLInputElement>(null);
   const [newEmpDept, setNewEmpDept]     = useState('');
   const [newEmpDomain, setNewEmpDomain] = useState('');
@@ -2659,7 +3041,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
   const resetCreateWizard = () => {
     setCreateTab('blank'); setNewEmpName(''); setNewEmpDesc('');
     setNewEmpAvatarType('auto'); setNewEmpAvatarUrl(null);
-    setSelectedTemplate(null); setAiCreateInput(''); setAiCreateLoading(false);
+    setSelectedTemplate(null);
     setAiDescLoading(false); setAiAvatarLoading(false);
     setNewEmpDept(''); setNewEmpDomain(''); setNewEmpRole('');
   };
@@ -2668,45 +3050,8 @@ const DigitalEmployeeLibrary: React.FC = () => {
     { id: 't1', name: '法务合规助手', desc: '合同审查·法规咨询', color: 'linear-gradient(135deg,#6366F1,#8B5CF6)', dept: '法务部',   role: '法务合规顾问', domain: '法务域'   },
     { id: 't2', name: '智能客服助手', desc: '7×24小时客户服务',  color: 'linear-gradient(135deg,#10B981,#34D399)', dept: '客户成功',  role: '智能客服专员', domain: '客服域'   },
     { id: 't3', name: '数据分析专家', desc: '数据洞察·可视化报告', color: 'linear-gradient(135deg,#3B82F6,#06B6D4)', dept: '技术部',   role: '数据分析师',  domain: '技术域'   },
-    { id: 't4', name: '工作汇报助手', desc: '周报·会议纪要生成', color: 'linear-gradient(135deg,#F59E0B,#FBBF24)', dept: '运营部',   role: '文档生产专员', domain: '运营域'   },
-    { id: 't5', name: '智能巡检助手', desc: '设备监控·预警研判', color: 'linear-gradient(135deg,#EF4444,#F87171)', dept: '人力资源', role: '智能巡检员',  domain: '管道安全域' },
+    { id: 't4', name: '工作汇报助手', desc: '周报·会议纪要生成', color: 'linear-gradient(135deg,#F59E0B,#FBBF24)', dept: '运营部',   role: '文档生产专员', domain: '运营域'   }
   ];
-
-  const AI_SAMPLES = [
-    '创建一个能处理法务合规审查、合同风险识别的数字员工',
-    '我想要一个工作汇报专家，能够根据我提供的资料生成项目总结汇报、周报或会议纪要等',
-    '创建一个智能巡检助手，负责监控设备状态、分析异常预警并生成巡检报告',
-    '实现一个客户服务助手，能解答产品问题、处理投诉、自动生成工单',
-  ];
-
-  const handleAiGenerate = () => {
-    if (!aiCreateInput.trim() || aiCreateLoading) return;
-    setAiCreateLoading(true);
-    setTimeout(() => {
-      const input = aiCreateInput.trim();
-      const isLaw  = input.includes('法务') || input.includes('合规') || input.includes('合同');
-      const isCust = input.includes('客户') || input.includes('客服');
-      const isData = input.includes('数据') || input.includes('分析');
-      const isOps  = input.includes('巡检') || input.includes('运维') || input.includes('设备');
-      const isRpt  = input.includes('汇报') || input.includes('周报') || input.includes('纪要');
-      const mockName   = isLaw ? '法务合规专员' : isCust ? '智能客服专员' : isData ? '数据分析专家' : isOps ? '智能巡检助手' : isRpt ? '工作汇报专家' : '数字员工助手';
-      const mockDept   = isLaw ? '法务部' : isCust ? '客户成功' : isData ? '技术部' : isOps ? '运营部' : '综合办公室';
-      const mockDomain = isLaw ? '法务域' : isCust ? '客服域' : isData ? '技术域' : isOps ? '运营域' : '技术域';
-      const mockRole   = isLaw ? '法务合规顾问' : isCust ? '智能客服专员' : isData ? '数据分析师' : isOps ? '智能巡检员' : isRpt ? '文档生产专员' : '数字员工助手';
-      const mockDesc   = `${mockName}基于 AI 大模型驱动，${input.slice(0, 30)}。具备 7×24 小时在线服务能力，严格遵循企业规范标准，可高效完成对应岗位的核心工作职责。`;
-      setNewEmpName(mockName);
-      setNewEmpDept(mockDept);
-      setNewEmpDomain(mockDomain);
-      setNewEmpRole(mockRole);
-      setNewEmpDesc(mockDesc);
-      setNewEmpAvatarType('ai');
-      setNewEmpAvatarUrl(null);
-      setSelectedTemplate(null);
-      setAiCreateLoading(false);
-      setCreateTab('blank');
-      message.success('AI 已生成员工配置，请确认或修改');
-    }, 1600);
-  };
 
   const handleConfirmCreate = () => {
     if (!newEmpName.trim()) { message.warning('请填写员工名称'); return; }
@@ -2737,7 +3082,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
     return matchSearch && matchStatus && matchDomain;
   });
 
-  // ── 定岗 Modal ────────────────────────────────────────────
+  // ── 备岗 Modal ────────────────────────────────────────────
   const [publishVersionOpen, setPublishVersionOpen] = useState(false);
   const [publishEmpId, setPublishEmpId]   = useState<string | null>(null);
   const [publishEmpName, setPublishEmpName] = useState('');
@@ -2855,12 +3200,15 @@ const DigitalEmployeeLibrary: React.FC = () => {
                 {r.description}
               </div>
               {/* 版本 + 部门 */}
-              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 12 }}>{r.dept} · {r.version} · {r.updateTime}</div>
+              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 8 }}>{r.dept} · {r.version} · {r.updateTime}</div>
               {/* 操作 */}
               <div style={{ display: 'flex', gap: 6, borderTop: '1px solid #f5f5f5', paddingTop: 10 }} onClick={e => e.stopPropagation()}>
                 <Button size="small" type="text" icon={<ApiOutlined />} style={{ color: '#6366F1', fontSize: 12 }} onClick={() => { setSelectedEmployee(r); setApiDrawerOpen(true); }}>接入</Button>
+                <Tooltip title="360画像">
+                  <Button size="small" type="text" icon={<RadarChartOutlined />} style={{ color: '#8B5CF6', fontSize: 12 }} onClick={() => setProfile360Open(true)}>360画像</Button>
+                </Tooltip>
                 <div style={{ flex: 1 }} />
-                {r.status === 'draft' && <Button size="small" type="text" icon={<TagOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => openStationModal(r.id)}>定岗</Button>}
+                {r.status === 'draft' && <Button size="small" type="text" icon={<TagOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => openStationModal(r.id)}>备岗</Button>}
                 {r.status === 'stationed' && <Button size="small" type="text" icon={<CloudUploadOutlined />} style={{ color: '#6366F1', fontSize: 12 }} onClick={() => openGoLiveModal(r.id)}>上岗</Button>}
                 {r.status === 'published' && <Button size="small" type="text" icon={<PauseCircleOutlined />} style={{ color: '#f59e0b', fontSize: 12 }} onClick={() => handleStatusChange(r.id, 'paused')}>暂停</Button>}
                 {r.status === 'paused' && <Button size="small" type="text" icon={<PlayCircleOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => handleStatusChange(r.id, 'published')}>恢复</Button>}
@@ -2894,12 +3242,13 @@ const DigitalEmployeeLibrary: React.FC = () => {
     { title: '上岗范围', key: 'scope', width: 110, render: (_, r) => { const cfg = SCOPE_CONFIG[r.scope]; return <span style={{ fontSize: 12, color: '#666', display: 'flex', alignItems: 'center', gap: 4 }}>{cfg.icon} {cfg.label}</span>; } },
     { title: '更新时间', key: 'updateTime', width: 110, render: (_, r) => <span style={{ fontSize: 12, color: '#999' }}>{r.updateTime}</span> },
     {
-      title: '操作', key: 'actions', width: 200,
+      title: '操作', key: 'actions', width: 230,
       render: (_, r) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
           <Button size="small" type="text" icon={<ApiOutlined />} style={{ color: '#6366F1', fontSize: 12 }} onClick={() => { setSelectedEmployee(r); setApiDrawerOpen(true); }}>接入</Button>
+          <Button size="small" type="text" icon={<RadarChartOutlined />} style={{ color: '#8B5CF6', fontSize: 12 }} onClick={() => setProfile360Open(true)}>360画像</Button>
           <Divider type="vertical" style={{ margin: '0 2px' }} />
-          {r.status === 'draft' && <Button size="small" type="text" icon={<TagOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => openStationModal(r.id)}>定岗</Button>}
+          {r.status === 'draft' && <Button size="small" type="text" icon={<TagOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => openStationModal(r.id)}>备岗</Button>}
           {r.status === 'stationed' && <Button size="small" type="text" icon={<CloudUploadOutlined />} style={{ color: '#6366F1', fontSize: 12 }} onClick={() => openGoLiveModal(r.id)}>上岗</Button>}
           {r.status === 'published' && <Button size="small" type="text" icon={<PauseCircleOutlined />} style={{ color: '#f59e0b', fontSize: 12 }} onClick={() => handleStatusChange(r.id, 'paused')}>暂停</Button>}
           {r.status === 'paused' && <Button size="small" type="text" icon={<PlayCircleOutlined />} style={{ color: '#10b981', fontSize: 12 }} onClick={() => handleStatusChange(r.id, 'published')}>恢复</Button>}
@@ -2924,11 +3273,6 @@ const DigitalEmployeeLibrary: React.FC = () => {
           <Button type={viewMode === 'list' ? 'primary' : 'text'} icon={<UnorderedListOutlined />} size="small" style={{ borderRadius: 0, background: viewMode === 'list' ? '#6366F1' : 'transparent', border: 'none', height: 32, padding: '0 12px', color: viewMode === 'list' ? '#fff' : '#666' }} onClick={() => setViewMode('list')}>列表</Button>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateWizardOpen(true)} style={{ background: '#6366F1', borderColor: '#6366F1', borderRadius: 8, fontWeight: 600 }}>创建数字员工</Button>
-        {/* 管理员模式切换（演示用） */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 8, background: isAdmin ? '#fef2f2' : '#f5f5f5', border: `1px solid ${isAdmin ? '#fecaca' : '#e8e8e8'}` }}>
-          <Switch size="small" checked={isAdmin} onChange={setIsAdmin} style={{ background: isAdmin ? '#dc2626' : undefined }} />
-          <span style={{ fontSize: 12, color: isAdmin ? '#dc2626' : '#888', fontWeight: isAdmin ? 600 : 400 }}>{isAdmin ? '管理员模式' : '普通用户'}</span>
-        </div>
       </div>
 
       {/* 域分类 Tab */}
@@ -2972,25 +3316,10 @@ const DigitalEmployeeLibrary: React.FC = () => {
           }}
         />
 
-        {/* 头部：标题 + Tab 切换 + 关闭 */}
+        {/* 头部：标题 + 关闭 */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '22px 28px 14px', borderBottom: '1px solid #F3F4F6' }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>创建数字员工</div>
           <div style={{ flex: 1 }} />
-          {/* 右侧 Tab 切换 */}
-          <div style={{ display: 'flex', gap: 0, background: '#F3F4F6', borderRadius: 8, padding: 3, marginRight: 16 }}>
-            {([
-              { key: 'blank', label: '空白创建' },
-              { key: 'ai',    label: '✦ AI创建' },
-            ] as const).map(tab => (
-              <div key={tab.key} onClick={() => setCreateTab(tab.key)}
-                style={{ padding: '5px 16px', borderRadius: 6, fontSize: 12, fontWeight: createTab === tab.key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s',
-                  color: createTab === tab.key ? (tab.key === 'ai' ? '#6366F1' : '#111827') : '#6B7280',
-                  background: createTab === tab.key ? '#fff' : 'transparent',
-                  boxShadow: createTab === tab.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                }}
-              >{tab.label}</div>
-            ))}
-          </div>
           <div onClick={() => { setCreateWizardOpen(false); resetCreateWizard(); }}
             style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, cursor: 'pointer', color: '#9CA3AF', fontSize: 18, transition: 'background 0.15s' }}
             onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F3F4F6'}
@@ -3151,55 +3480,6 @@ const DigitalEmployeeLibrary: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* ── AI 创建内容 ── */}
-        {createTab === 'ai' && (
-          <div style={{ padding: '28px 48px 32px', maxHeight: '72vh', overflowY: 'auto' }}>
-            <div style={{ textAlign: 'center', fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 24, letterSpacing: -0.5 }}>
-              描述你需要的数字员工
-            </div>
-
-            {/* 输入容器 */}
-            <div style={{ border: '1.5px solid #E5E7EB', borderRadius: 14, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: 24 }}>
-              <textarea
-                value={aiCreateInput}
-                onChange={e => setAiCreateInput(e.target.value)}
-                placeholder="请描述员工岗位、工作职责、规范要求等，AI 将自动生成对应的数字员工配置"
-                rows={5}
-                style={{ width: '100%', padding: '18px 20px 8px', border: 'none', outline: 'none', fontSize: 14, resize: 'none', fontFamily: 'inherit', lineHeight: 1.7, color: '#374151', background: 'transparent', boxSizing: 'border-box' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 14px' }}>
-                <button
-                  onClick={handleAiGenerate}
-                  disabled={!aiCreateInput.trim() || aiCreateLoading}
-                  style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 22px', borderRadius: 24, border: 'none', background: aiCreateInput.trim() && !aiCreateLoading ? 'linear-gradient(135deg,#6366F1,#8B5CF6)' : '#E5E7EB', color: aiCreateInput.trim() && !aiCreateLoading ? '#fff' : '#9CA3AF', fontSize: 14, fontWeight: 600, cursor: aiCreateInput.trim() && !aiCreateLoading ? 'pointer' : 'not-allowed', transition: 'all 0.15s' }}
-                >
-                  {aiCreateLoading
-                    ? <><span>⟳</span> 生成中…</>
-                    : <><span style={{ fontSize: 12 }}>✦</span> AI 创建</>
-                  }
-                </button>
-              </div>
-            </div>
-
-            {/* 示例 */}
-            <div style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 500, marginBottom: 10, letterSpacing: 0.3 }}>试试看</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {[
-                '法务合规专员，负责合同审查、法规解读、合规风险识别，需严格遵循公司内部法务审查规范',
-                '客户服务代表，处理客户投诉与售后咨询，须在 2 分钟内响应，并按服务话术规范引导解决',
-                '数据分析师，定期产出业务数据报告与可视化图表，遵循数据安全与保密要求',
-                '巡检运维员，负责设备状态监控与异常预警研判，按照运维 SOP 规范生成巡检报告',
-              ].map(tip => (
-                <div key={tip} onClick={() => setAiCreateInput(tip)}
-                  style={{ padding: '11px 14px', borderRadius: 8, fontSize: 13, color: '#374151', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.12s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = '#F9FAFB'}
-                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                >{tip}</div>
-              ))}
-            </div>
-          </div>
-        )}
       </Modal>
 
       {/* 全页创建向导 */}
@@ -3281,7 +3561,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
         }}
       />
 
-      {/* 定岗 Modal */}
+      {/* 备岗 Modal */}
       <PublishVersionModal
         open={publishVersionOpen}
         latestVersion=""
@@ -3291,7 +3571,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
             employeeStore.updateEmployee(publishEmpId, { status: 'stationed' as any });
             setLocalOverrides(prev => ({ ...prev, [publishEmpId]: { ...prev[publishEmpId], status: 'stationed' as EmployeeStatus } }));
           }
-          message.success(`「${publishEmpName || '新员工'}」已定岗，版本 ${version}`);
+          message.success(`「${publishEmpName || '新员工'}」已备岗，版本 ${version}`);
           setPublishVersionOpen(false);
         }}
       />
@@ -3306,16 +3586,14 @@ const DigitalEmployeeLibrary: React.FC = () => {
       />
 
       {/* 多入口 API Drawer */}
-      <Drawer title={`多入口接入 · ${selectedEmployee?.name || ''}`} open={apiDrawerOpen} onClose={() => setApiDrawerOpen(false)} width={780}>
+      <Drawer title={`接入配置 · ${selectedEmployee?.name || ''}`} open={apiDrawerOpen} onClose={() => setApiDrawerOpen(false)} width={860}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* API Key 管理 */}
           <ApiKeySection />
           {[
-            { mode: 'H5 网页入口', icon: <DesktopOutlined />, color: '#6366F1', desc: '适配电脑/移动端，浏览器直接访问，无需安装', code: `https://emp.wanjuan.ai/h5/${selectedEmployee?.id}` },
-            { mode: 'elink 嵌入入口', icon: <LinkOutlined />, color: '#10B981', desc: '嵌入政企内部办公系统/政务服务平台', code: `<iframe src="https://emp.wanjuan.ai/elink/${selectedEmployee?.id}" allow="microphone" />` },
-            { mode: '小程序入口', icon: <MobileOutlined />, color: '#F59E0B', desc: '适配政企专属 APP，微信/钉钉小程序', code: `app_id: ${selectedEmployee?.id}\nentry_type: miniapp\nplatform: wechat | dingtalk` },
-            { mode: 'REST API', icon: <ApiOutlined />, color: '#3B82F6', desc: '标准 HTTP 接口，支持外部系统集成', code: `POST /v1/employees/${selectedEmployee?.id}/chat\nAuthorization: Bearer {YOUR_API_KEY}` },
-            { mode: '工作流节点', icon: <ThunderboltOutlined />, color: '#8B5CF6', desc: '在万卷工作流中以节点形式调用', code: `agent_id: ${selectedEmployee?.id}\ntype: digital_employee\ncall_mode: sync` },
+            { mode: '飞书机器人', icon: <span style={{ fontSize: 18 }}>🪶</span>, color: '#00B96B', desc: '以飞书机器人形式在群组/会话中提供服务，支持群消息、私聊', code: `bot_id: ${selectedEmployee?.id}\nplatform: feishu\ncall_mode: bot` },
+            { mode: 'REST API', icon: <ApiOutlined />, color: '#3B82F6', desc: '标准 HTTP 接口，支持外部系统集成与程序化调用', code: `POST /v1/employees/${selectedEmployee?.id}/chat\nAuthorization: Bearer {YOUR_API_KEY}` },
+            { mode: 'H5 网页', icon: <DesktopOutlined />, color: '#6366F1', desc: '适配电脑/移动端，浏览器直接访问，无需安装', code: `https://emp.wanjuan.ai/h5/${selectedEmployee?.id}` },
           ].map(item => (
             <div key={item.mode} style={{ border: `1px solid ${item.color}25`, borderRadius: 10, overflow: 'hidden' }}>
               <div style={{ padding: '10px 16px', background: `${item.color}08`, borderBottom: `1px solid ${item.color}20`, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -3333,6 +3611,19 @@ const DigitalEmployeeLibrary: React.FC = () => {
           ))}
         </div>
       </Drawer>
+
+      {/* 360画像弹窗 */}
+      <Modal
+        open={profile360Open}
+        onCancel={() => setProfile360Open(false)}
+        footer={null}
+        width={960}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: 0, maxHeight: '90vh', overflowY: 'auto' }}
+        destroyOnClose
+      >
+        <DigitalEmployeeProfile embedded />
+      </Modal>
     </div>
   );
 };

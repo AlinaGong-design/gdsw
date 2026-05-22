@@ -76,20 +76,6 @@ const initialEmployees: EmployeeRecord[] = [
     ratingCount: 0, ratingSum: 0, recentCalls: [0, 0, 0, 0, 0, 0, 0],
   },
   {
-    id: 'de-007', name: '智能巡检助手', dept: '管道运营部', domain: '管道安全域',
-    description: '整合光纤预警、机器视觉、无人机巡护等多源告警，自动完成预警研判、工单派发与闭环跟踪，覆盖管道安全巡检全流程',
-    status: 'published', version: 'v1.0.0', scope: 'company',
-    updateTime: '2026-03-20', callCount: 2156, score: 4.7, heat: 83, type: '定制款',
-    ratingCount: 142, ratingSum: 667.4, recentCalls: [28, 35, 42, 38, 51, 46, 39],
-  },
-  {
-    id: 'de-008', name: '智能巡检demo', dept: '管道运营部', domain: '管道安全域',
-    description: '面向管道智能巡护场景的演示助手，集成隐患智能识别、巡护路线规划、风险等级评估、应急协同调度等全链路能力，展示数字员工在管道安全领域的端到端业务价值',
-    status: 'published', version: 'v1.0.0', scope: 'company',
-    updateTime: '2026-04-10', callCount: 386, score: 4.9, heat: 72, type: '定制款',
-    ratingCount: 45, ratingSum: 220.5, recentCalls: [12, 18, 15, 22, 19, 16, 14],
-  },
-  {
     id: 'de-009', name: '合同审核助手', dept: '法务部', domain: '法务域',
     description: '通用合同智能审核助手，运用 AI Agent 多步推理能力，自动解析合同文本、识别风险条款、匹配法律依据，并在关键风险节点触发人工确认，确保审核结论准确可靠',
     status: 'published', version: 'v1.0.0', scope: 'company',
