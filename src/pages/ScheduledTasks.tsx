@@ -77,13 +77,6 @@ const MOCK_TASKS: ScheduledTask[] = [
     runCount: 31, successCount: 30, source: 'chat',
   },
   {
-    id: 'st-005', name: '系统异常告警', employeeName: '智能巡检助手', employeeId: 'de-008',
-    triggerType: 'event', cronExpr: '', cronDesc: '系统监控异常时触发',
-    nlInput: '', taskContent: '监控到管道压力异常、设备离线等事件时，自动分析原因并推送告警',
-    channel: 'elink', status: 'active', lastRunAt: '2026-04-02 11:23', nextRunAt: '事件触发',
-    runCount: 7, successCount: 7, source: 'task',
-  },
-  {
     id: 'st-006', name: '月度绩效汇总', employeeName: '法务合规助手', employeeId: 'de-001',
     triggerType: 'scheduled', cronExpr: '0 9 1 * *', cronDesc: '每月1日 09:00',
     nlInput: '', taskContent: '汇总上月任务完成情况、评分数据，生成绩效分析报告',
@@ -117,7 +110,6 @@ const EMPLOYEES = [
   { id: 'de-002', name: 'HR 招聘助手' },
   { id: 'de-003', name: '财务报表助手' },
   { id: 'de-004', name: '代码审查助手' },
-  { id: 'de-008', name: '智能巡检助手' },
 ];
 
 const CHANNELS = ['elink', '短信'];
