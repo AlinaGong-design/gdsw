@@ -141,7 +141,7 @@ const CHANNELS = [
   { id: 'embed', label: '前台嵌入', desc: '悬浮窗或内嵌部署到万卷前台', icon: '🖥️' },
   { id: 'api',   label: 'REST API', desc: '标准 HTTP 接口，支持外部系统集成', icon: '🔌' },
   { id: 'flow',  label: '工作流节点', desc: '作为节点嵌入万卷工作流', icon: '⚡' },
-  { id: 'feishu',label: 'elink', desc: '以elink群机器人形式提供服务', icon: '🪶' },
+  { id: 'feishu',label: 'elink', desc: '嵌入政企内部办公系统/政务服务平台', icon: '🪶' },
   { id: 'ding',  label: 'elink机器人', desc: '以工作群机器人形式提供服务', icon: '📎' },
 ];
 

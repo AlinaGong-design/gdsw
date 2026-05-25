@@ -227,7 +227,7 @@ const RESPONSE_STYLES = [
 const CHANNELS = [
   { id: 'api',    label: 'REST API',   desc: '标准 HTTP 接口，支持外部系统集成', icon: '🔌' },
   { id: 'flow',   label: '工作流节点', desc: '作为节点嵌入工作流',               icon: '⚡' },
-  { id: 'feishu', label: 'elink', desc: '以elink群机器人形式提供服务',       icon: '🪶' },
+  { id: 'feishu', label: 'elink', desc: '嵌入政企内部办公系统/政务服务平台',       icon: '🪶' },
   { id: 'ding',   label: 'elink机器人', desc: '以工作群机器人形式提供服务',       icon: '📎' },
 ];
 const DEFAULT_PROMPT = `你是「{员工名称}」，{部门}的{角色定位}。
@@ -2044,7 +2044,7 @@ const EmployeeConfigPage: React.FC<{
                   {[
                     { id: 'api',    label: 'REST API',  desc: '标准 HTTP 接口，支持外部系统程序化调用', icon: <ApiOutlined /> },
                     { id: 'h5',     label: 'H5 网页',   desc: '适配电脑/移动端，浏览器直接访问，无需安装', icon: <DesktopOutlined /> },
-                    { id: 'feishu', label: 'elink',  desc: '以elink机器人形式在群组/会话中提供服务', icon: <span style={{ fontSize: 15 }}>🪶</span> },
+                    { id: 'feishu', label: 'elink',  desc: '嵌入政企内部办公系统/政务服务平台', icon: <span style={{ fontSize: 15 }}>🪶</span> },
                   ].map(ch => {
                     const selected = data.channels.includes(ch.id);
                     return (
@@ -3591,7 +3591,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
           {/* API Key 管理 */}
           <ApiKeySection />
           {[
-            { mode: 'elink', icon: <span style={{ fontSize: 18 }}>🪶</span>, color: '#00B96B', desc: '以elink机器人形式在群组/会话中提供服务，支持群消息、私聊', code: `bot_id: ${selectedEmployee?.id}\nplatform: feishu\ncall_mode: bot` },
+            { mode: 'elink', icon: <span style={{ fontSize: 18 }}>🪶</span>, color: '#00B96B', desc: '嵌入政企内部办公系统/政务服务平台', code: `bot_id: ${selectedEmployee?.id}\nplatform: feishu\ncall_mode: bot` },
             { mode: 'REST API', icon: <ApiOutlined />, color: '#3B82F6', desc: '标准 HTTP 接口，支持外部系统集成与程序化调用', code: `POST /v1/employees/${selectedEmployee?.id}/chat\nAuthorization: Bearer {YOUR_API_KEY}` },
             { mode: 'H5 网页', icon: <DesktopOutlined />, color: '#6366F1', desc: '适配电脑/移动端，浏览器直接访问，无需安装', code: `https://emp.wanjuan.ai/h5/${selectedEmployee?.id}` },
           ].map(item => (
