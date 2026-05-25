@@ -63,11 +63,11 @@ export const MOCK_SKILLS: Skill[] = [
     dependencies: ['law-db-connector'],
   },
   {
-    id: 'sk-003', name: '飞书消息推送', category: '通信集成',
-    desc: '向飞书群组或个人推送富文本消息、卡片消息，支持 @成员、附件发送',
+    id: 'sk-003', name: '消息推送', category: '通信集成',
+    desc: '向工作群组或个人推送富文本消息、卡片消息，支持 @成员、附件发送',
     status: 'published', tier: 'free', version: 'v3.0.2', author: '平台团队',
     protocol: 'REST', mountCount: 31, callCount7d: 9342, lastUpdated: '2026-04-08',
-    tags: ['飞书', '消息', '通知'], inputs: ['chat_id', 'message_type', 'content'], outputs: ['message_id', 'status'],
+    tags: ['elink', '消息', '通知'], inputs: ['chat_id', 'message_type', 'content'], outputs: ['message_id', 'status'],
     dependencies: ['feishu-sdk'],
   },
   {
@@ -104,7 +104,7 @@ export const MOCK_SKILLS: Skill[] = [
   },
   {
     id: 'sk-008', name: '数据报表生成', category: '数据分析',
-    desc: '基于 SQL 查询结果自动生成可视化报表（折线图、柱状图、饼图），支持导出 PDF 与飞书推送',
+    desc: '基于 SQL 查询结果自动生成可视化报表（折线图、柱状图、饼图），支持导出 PDF 与消息推送',
     status: 'published', tier: 'free', version: 'v2.1.0', author: '数据中台',
     protocol: 'REST', mountCount: 14, callCount7d: 3104, lastUpdated: '2026-03-30',
     tags: ['报表', '可视化', '数据'], inputs: ['sql', 'chart_type', 'title'], outputs: ['chart_url', 'pdf_url'],

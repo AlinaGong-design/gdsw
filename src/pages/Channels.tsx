@@ -47,7 +47,7 @@ const channelTypeConfig: Record<string, { label: string; color: string; icon: st
 const mockChannels: ChannelItem[] = [
   {
     id: '1',
-    name: '钉钉客服机器人',
+    name: 'elink客服机器人',
     type: 'dingtalk',
     status: 'connected',
     model: 'gpt-4o',
@@ -56,7 +56,7 @@ const mockChannels: ChannelItem[] = [
   },
   {
     id: '2',
-    name: '飞书工作助手',
+    name: 'elink工作助手',
     type: 'feishu',
     status: 'connected',
     model: 'claude-3-5-sonnet',
@@ -161,7 +161,7 @@ const DingTalkFields: React.FC = () => (
       showIcon
       style={{ marginBottom: 16 }}
       message="配置说明"
-      description="钉钉渠道通过企业内部应用实现，需在钉钉开放平台创建企业内部应用并获取 App Key 与 App Secret。"
+      description="elink渠道通过企业内部应用实现，需在elink开放平台创建企业内部应用并获取 App Key 与 App Secret。"
     />
   </>
 );
@@ -186,7 +186,7 @@ const FeishuFields: React.FC = () => (
       label={
         <span>
           Verification Token&nbsp;
-          <Tooltip title="飞书开放平台事件订阅的验证令牌">
+          <Tooltip title="elink开放平台事件订阅的验证令牌">
             <QuestionCircleOutlined style={{ color: '#aaa' }} />
           </Tooltip>
         </span>
@@ -213,7 +213,7 @@ const FeishuFields: React.FC = () => (
       showIcon
       style={{ marginBottom: 16 }}
       message="配置说明"
-      description="飞书渠道通过飞书开放平台自建应用实现，需订阅「接收消息」事件并配置 Webhook 地址。"
+      description="elink渠道通过elink开放平台自建应用实现，需订阅「接收消息」事件并配置 Webhook 地址。"
     />
   </>
 );
@@ -497,7 +497,7 @@ const Channels: React.FC = () => {
         </Button>
       </div>
       <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-        Channels 是 AI 智能体的"耳朵"与"嘴巴"，负责接收用户的自然语言指令并返回执行结果。支持钉钉、飞书、企业微信、QQ、微信等主流国内平台接入。OpenClaw 通过单一 Gateway 进程连接多个聊天应用。
+        Channels 是 AI 智能体的"耳朵"与"嘴巴"，负责接收用户的自然语言指令并返回执行结果。支持elink、企业微信、QQ、微信等主流国内平台接入。OpenClaw 通过单一 Gateway 进程连接多个聊天应用。
       </Paragraph>
 
       <Alert

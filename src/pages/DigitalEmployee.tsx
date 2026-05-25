@@ -43,15 +43,15 @@ interface DigitalEmployeeItem {
 
 const MOCK_EMPLOYEES: DigitalEmployeeItem[] = [
   { id: 'de-001', name: '法务合规助手', dept: '法务部', description: '合同审查、合规检查、法律风险评估，支持多种合同模板自动识别与条款提取', status: 'published', version: 'v2.1.0', scope: 'company', updateTime: '2026-03-10' },
-  { id: 'de-002', name: 'HR 招聘助手', dept: '人力资源', description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入飞书日历', status: 'published', version: 'v1.3.2', scope: 'dept', updateTime: '2026-03-05' },
+  { id: 'de-002', name: 'HR 招聘助手', dept: '人力资源', description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入系统日历', status: 'published', version: 'v1.3.2', scope: 'dept', updateTime: '2026-03-05' },
   { id: 'de-003', name: '财务报表助手', dept: '财务部', description: '定时拉取业务数据，AI 生成分析报告，异常数据预警推送', status: 'testing', version: 'v3.0.0-beta', scope: 'dept', updateTime: '2026-03-14' },
-  { id: 'de-004', name: '代码审查助手', dept: '技术部', description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 GitLab/GitHub', status: 'paused', version: 'v1.1.0', scope: 'dept', updateTime: '2026-02-28' },
+  { id: 'de-004', name: '代码审查助手', dept: '技术部', description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 代码仓库', status: 'paused', version: 'v1.1.0', scope: 'dept', updateTime: '2026-02-28' },
   { id: 'de-005', name: '智能客服分发', dept: '客户成功', description: '意图识别、多轮路由分发、自动记录工单，支持人工接管', status: 'draft', version: 'v0.1.0', scope: 'private', updateTime: '2026-03-15' },
 ];
 
 const MOCK_VERSIONS: EmployeeVersion[] = [
   { versionId: 'v3', version: 'v2.1.0', changelog: '优化合同识别准确率，新增风险等级标注', publishedAt: '2026-03-10 14:30', publishedBy: '张三', status: 'active' },
-  { versionId: 'v2', version: 'v2.0.1', changelog: '修复飞书文档权限异常问题', publishedAt: '2026-02-28 09:15', publishedBy: '张三', status: 'history' },
+  { versionId: 'v2', version: 'v2.0.1', changelog: '修复在线文档权限异常问题', publishedAt: '2026-02-28 09:15', publishedBy: '张三', status: 'history' },
   { versionId: 'v1', version: 'v2.0.0', changelog: '重构 Prompt 结构，支持多类型合同模板', publishedAt: '2026-02-15 16:00', publishedBy: '李四', status: 'history' },
 ];
 
@@ -107,7 +107,7 @@ const KNOWLEDGE_BASES = [
 
 const SKILL_LIST = [
   { id: 'sk1', name: '网络搜索', type: 'Skill', icon: '🔍', desc: '实时搜索互联网信息' },
-  { id: 'sk2', name: '飞书文档', type: 'Skill', icon: '📄', desc: '飞书文档读写与管理' },
+  { id: 'sk2', name: '在线文档', type: 'Skill', icon: '📄', desc: '在线文档读写与管理' },
   { id: 'sk3', name: 'Python 执行', type: 'Skill', icon: '🐍', desc: '执行 Python 代码，处理结构化数据' },
   { id: 'sk4', name: 'PDF 解析', type: 'Skill', icon: '📃', desc: '解析 PDF 文档内容' },
   { id: 'sk5', name: '内容审核流程', type: '工作流', icon: '⚡', desc: '多节点内容合规审查' },
@@ -116,9 +116,9 @@ const SKILL_LIST = [
 ];
 
 const INTEGRATIONS = [
-  { id: 'int1', name: '飞书', icon: '🪶', desc: '消息推送、文档、日历、审批流' },
-  { id: 'int2', name: '钉钉', icon: '📎', desc: '群消息、工作通知、表单填写' },
-  { id: 'int3', name: 'GitHub / GitLab', icon: '🐙', desc: 'PR 审查、Issue 管理、代码操作' },
+  { id: 'int1', name: 'elink', icon: '🪶', desc: '消息推送、文档、日历、审批流' },
+  { id: 'int2', name: 'elink', icon: '📎', desc: '工作群消息、工作通知、表单填写' },
+  { id: 'int3', name: '代码仓库', icon: '🐙', desc: 'PR 审查、Issue 管理、代码操作' },
   { id: 'int4', name: 'Jira', icon: '🎯', desc: '工单创建、状态更新、看板联动' },
   { id: 'int5', name: 'Salesforce', icon: '☁️', desc: 'CRM 数据读写、商机与客户跟踪' },
 ];
@@ -141,8 +141,8 @@ const CHANNELS = [
   { id: 'embed', label: '前台嵌入', desc: '悬浮窗或内嵌部署到万卷前台', icon: '🖥️' },
   { id: 'api',   label: 'REST API', desc: '标准 HTTP 接口，支持外部系统集成', icon: '🔌' },
   { id: 'flow',  label: '工作流节点', desc: '作为节点嵌入万卷工作流', icon: '⚡' },
-  { id: 'feishu',label: '飞书机器人', desc: '以飞书群机器人形式提供服务', icon: '🪶' },
-  { id: 'ding',  label: '钉钉机器人', desc: '以钉钉群机器人形式提供服务', icon: '📎' },
+  { id: 'feishu',label: 'elink', desc: '以elink群机器人形式提供服务', icon: '🪶' },
+  { id: 'ding',  label: 'elink机器人', desc: '以工作群机器人形式提供服务', icon: '📎' },
 ];
 
 const DEFAULT_PROMPT = `你是「{员工名称}」，{部门}的{角色定位}。

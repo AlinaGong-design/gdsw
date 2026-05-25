@@ -105,7 +105,7 @@ const ROLE_CFG: Record<OperatorRole, { label: string; color: string; bg: string;
 };
 
 const ACTION_CFG: Record<ActionType, { label: string; color: string; desc: string }> = {
-  notify:   { label: '告警通知', color: '#6b7280', desc: '推送飞书/邮件/短信通知，记录安全事件' },
+  notify:   { label: '告警通知', color: '#6b7280', desc: '推送消息渠道/邮件/短信通知，记录安全事件' },
   throttle: { label: '自动限流', color: '#d97706', desc: '系统自动将调用量限制至基线120%，发送SOC告警' },
   stop:     { label: '强制停止', color: '#ea580c', desc: '立即停止实例，中断所有调用，需人工恢复，推送值班群' },
   archive:  { label: '下架归档', color: '#dc2626', desc: '强制下架并归档实例，不可自动恢复，需安全官确认' },
@@ -127,42 +127,42 @@ const MOCK_RULES: AlertRule[] = [
     desc: '调用量超过基线150%时，向值班运维推送告警通知',
     metric: 'calls_per_hour', thresholdPct: 150, action: 'notify',
     autoExecute: true, requiresRole: 'operator', cooldownMinutes: 30,
-    notifyChannels: ['飞书值班群', '邮件'], enabled: true,
+    notifyChannels: ['值班工作群', '邮件'], enabled: true,
   },
   {
     id: 'rule-002', name: '调用量自动限流', level: 'P1',
     desc: '调用量超过基线300%时，系统自动限流至基线120%并推送SOC',
     metric: 'calls_per_hour', thresholdPct: 300, action: 'throttle',
     autoExecute: true, requiresRole: 'admin', cooldownMinutes: 10,
-    notifyChannels: ['飞书值班群', '飞书SOC群', '短信'], enabled: true,
+    notifyChannels: ['值班工作群', 'SOC工作群', '短信'], enabled: true,
   },
   {
     id: 'rule-003', name: '调用量强制停止', level: 'P0',
     desc: '调用量超过基线500%时，立即停止实例并推送紧急通知，需管理员人工恢复',
     metric: 'calls_per_hour', thresholdPct: 500, action: 'stop',
     autoExecute: true, requiresRole: 'admin', cooldownMinutes: 0,
-    notifyChannels: ['飞书值班群', '飞书SOC群', '短信', '电话'], enabled: true,
+    notifyChannels: ['值班工作群', 'SOC工作群', '短信', '电话'], enabled: true,
   },
   {
     id: 'rule-004', name: '敏感词命中预警', level: 'P2',
     desc: '单日敏感词命中次数超过基线200%时，发送预警并记录安全事件',
     metric: 'sensitive_hits', thresholdPct: 200, action: 'notify',
     autoExecute: true, requiresRole: 'operator', cooldownMinutes: 60,
-    notifyChannels: ['飞书安全群', '邮件'], enabled: true,
+    notifyChannels: ['安全工作群', '邮件'], enabled: true,
   },
   {
     id: 'rule-005', name: 'Token 消耗预警', level: 'P2',
     desc: 'Token 消耗超过基线200%时，推送预警防止超额费用',
     metric: 'tokens_per_hour', thresholdPct: 200, action: 'notify',
     autoExecute: true, requiresRole: 'operator', cooldownMinutes: 30,
-    notifyChannels: ['飞书值班群', '邮件'], enabled: true,
+    notifyChannels: ['值班工作群', '邮件'], enabled: true,
   },
   {
     id: 'rule-006', name: '强制下架归档', level: 'P0',
     desc: '发现严重违规或长期异常时，安全官确认后强制下架并归档实例，不可自动恢复',
     metric: 'calls_per_hour', thresholdPct: 0, action: 'archive',
     autoExecute: false, requiresRole: 'security_officer', cooldownMinutes: 0,
-    notifyChannels: ['飞书SOC群', '邮件', '短信'], enabled: true,
+    notifyChannels: ['SOC工作群', '邮件', '短信'], enabled: true,
   },
 ];
 

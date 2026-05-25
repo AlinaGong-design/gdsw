@@ -110,8 +110,8 @@ const MOCK_SECTIONS: WorkspaceSection[] = [
     label: '频道',
     collapsed: false,
     channels: [
-      { id: 'dingtalk-bot', name: '钉钉客服机器人', type: 'bot', description: 'Dingtalk 渠道消息', unread: 1, botIcon: '📌' },
-      { id: 'feishu-bot', name: '飞书工作助手', type: 'bot', description: 'Feishu 渠道消息', botIcon: '🪁' },
+      { id: 'dingtalk-bot', name: 'elink客服机器人', type: 'bot', description: 'Dingtalk 渠道消息', unread: 1, botIcon: '📌' },
+      { id: 'feishu-bot', name: 'elink工作助手', type: 'bot', description: 'Feishu 渠道消息', botIcon: '🪁' },
       { id: 'wecom-bot', name: '企业微信通知Bot', type: 'bot', description: 'Wecom 渠道消息', botIcon: '💬' },
       { id: 'dev', name: 'dev', type: 'public', description: '开发讨论', memberCount: 8 },
       { id: 'design', name: 'design', type: 'private', description: '设计团队专属', memberCount: 4 },
@@ -138,14 +138,14 @@ const MOCK_MESSAGES: Record<string, ChannelMessage[]> = {
     },
     {
       id: 'm2', authorId: 'u2', authorName: 'Bob Zhang', authorColor: '#10B981',
-      content: '已经把 钉钉机器人 和 飞书工作助手 接入了，大家可以在对应频道里看到转发的消息。',
+      content: '已经把 elink机器人 和 elink工作助手 接入了，大家可以在对应频道里看到转发的消息。',
       timestamp: new Date(Date.now() - 3600000 * 2),
       reactions: [{ emoji: '👍', count: 4, reacted: false }],
       threadCount: 3,
     },
     {
       id: 'm3', authorId: 'bot', authorName: 'OpenClaw', authorColor: '#8B5CF6',
-      content: '已完成每日任务摘要生成。今日共处理 **47** 条来自各渠道的消息，其中 钉钉 32 条，飞书 15 条。',
+      content: '已完成每日任务摘要生成。今日共处理 **47** 条来自各渠道的消息，其中 elink 32 条，elink 15 条。',
       timestamp: new Date(Date.now() - 3600000),
       botMessage: true, botIcon: '🤖', botName: 'OpenClaw Bot',
       reactions: [{ emoji: '✅', count: 2, reacted: false }],
@@ -195,7 +195,7 @@ const MOCK_MESSAGES: Record<string, ChannelMessage[]> = {
   'dingtalk-bot': [
     {
       id: 't1', authorId: 'bot', authorName: 'Dingtalk Bot', authorColor: '#1677ff',
-      content: '[来自 钉钉] @user123：帮我查一下明天上海的天气',
+      content: '[来自 elink] @user123：帮我查一下明天上海的天气',
       timestamp: new Date(Date.now() - 1200000),
       botMessage: true, botIcon: '📌', botName: 'Dingtalk',
     },

@@ -67,6 +67,7 @@ import SessionRatingModal from '../components/SessionRatingModal';
 import { employeeStore, EmployeeRecord } from '../store/employeeStore';
 import OpenClawDashboard from './OpenClawDashboard';
 import OpenClaw from './OpenClaw';
+import OperationPlanEditor from './OperationPlanEditor';
 import './Frontend.css';
 
 const { Sider, Content } = Layout;
@@ -242,13 +243,31 @@ const STEP_COLORS: Record<string, { bg: string; color: string; dot: string }> = 
 };
 
 const MOCK_TASKS: Record<string, TaskItem[]> = {
+  'de-012': [
+    { id: 'op-t1', title: '220kV变电站年度检修作业方案生成', status: 'done', time: '09:15', startDate: '2026/05/22', completedAt: '05/22 09:17:32', duration: '2m 32s', result: '已匹配方案模板，待填写 13 项内容', taskType: 'chat',
+      steps: [
+        { id: 's1', name: '材料解析', status: 'done', desc: '解析上传的变电站设计方案文件', time: '09:15:01', output: '共提取 12 页，识别变电站类型：220kV，作业类型：年度检修' },
+        { id: 's2', name: '意图识别', status: 'done', desc: 'AI 识别作业场景与类型', time: '09:15:08', output: '识别结果：变电站年度检修，置信度 96%' },
+        { id: 's3', name: '模板匹配', status: 'done', desc: '检索能源行业方案模板库', time: '09:15:20', output: '匹配到 3 套模板，推荐：220kV变电站年度检修标准模板 v2.3' },
+        { id: 's4', name: '文档生成', status: 'done', desc: '生成可填写的作业方案文档', time: '09:17:32', output: '文档已生成，共 13 处人工待填项，含 3 处图片上传' },
+      ],
+    },
+    { id: 'op-t2', title: '110kV输电线路巡视作业方案生成', status: 'done', time: '16:40', startDate: '2026/05/21', completedAt: '05/21 16:42:10', duration: '2m 10s', result: '方案已生成，用户已完成全部填写', taskType: 'chat',
+      steps: [
+        { id: 's1', name: '材料解析', status: 'done', desc: '解析巡视路线设计文件', time: '16:40:00', output: '识别输电线路：110kV，巡视类型：定期巡视' },
+        { id: 's2', name: '意图识别', status: 'done', desc: 'AI 识别作业类型', time: '16:40:12', output: '作业类型：输电线路巡视，置信度 94%' },
+        { id: 's3', name: '模板匹配', status: 'done', desc: '匹配巡视作业方案模板', time: '16:40:30', output: '匹配：110kV输电线路巡视标准方案模板 v1.5' },
+        { id: 's4', name: '文档生成', status: 'done', desc: '生成作业方案文档', time: '16:42:10', output: '用户已完成 11 项填写，文档已导出' },
+      ],
+    },
+  ],
   'de-001': [
     { id: 't1', title: '合同风险条款审查 — 供应商协议 v3.pdf', status: 'done', time: '10:32', startDate: '2026/05/13', completedAt: '05/13 10:34:46', duration: '2m 14s', result: '发现 3 处高风险条款，已生成审查报告', taskType: 'fixed',
       steps: [
         { id: 's1', name: '文档解析', status: 'done', desc: '调用 PDF 解析引擎提取全文结构', time: '10:32:01', output: '共提取 47 页，12,340 字，识别到 23 个条款段落' },
         { id: 's2', name: '合规规则匹配', status: 'done', desc: '逐条检索合规知识库规则', time: '10:32:08', output: '命中规则库 312 条，完成条款交叉映射' },
         { id: 's3', name: '风险识别', status: 'done', desc: 'AI 分析高风险语义模式，标注异常条款', time: '10:32:18', output: '识别出 3 处高风险：违约责任上限条款、单方解约权条款、数据归属模糊条款' },
-        { id: 's4', name: '报告生成', status: 'done', desc: '生成结构化审查报告并写入飞书文档', time: '10:34:15', output: '审查报告已生成，含风险等级标注与修改建议，已推送给法务负责人' },
+        { id: 's4', name: '报告生成', status: 'done', desc: '生成结构化审查报告并写入在线文档', time: '10:34:15', output: '审查报告已生成，含风险等级标注与修改建议，已推送给法务负责人' },
       ],
     },
     { id: 't2', title: '劳动合同模板合规性校验', status: 'done', time: '09:18', startDate: '2026/05/13', completedAt: '05/13 09:19:05', duration: '1m 05s', result: '合规，无异常项', taskType: 'chat',
@@ -281,14 +300,14 @@ const MOCK_TASKS: Record<string, TaskItem[]> = {
         { id: 's1', name: '简历解析', status: 'done', desc: '批量解析 32 份简历文件，提取结构化信息', time: '09:00:00', output: '解析完成：32 份，成功 31 份，1 份格式异常已跳过' },
         { id: 's2', name: 'JD 匹配度打分', status: 'done', desc: '对照岗位要求对每份简历进��多维度评分', time: '09:01:30', output: '平均匹配度 61%，最高 94%（候选人：王某），最低 28%' },
         { id: 's3', name: '筛选与排名', status: 'done', desc: '按匹配度排序，筛选阈值 ≥ 75%', time: '09:03:45', output: '入围 8 人：匹配度 94% / 91% / 88% / 86% / 83% / 81% / 79% / 77%' },
-        { id: 's4', name: '对比表生成', status: 'done', desc: '生成候选人多维对比表并写入飞书多维表格', time: '09:04:28', output: '对比表已生成，含技能评分、工作年限、期望薪资、优劣势总结' },
+        { id: 's4', name: '对比表生成', status: 'done', desc: '生成候选人多维对比表并写入在线表格', time: '09:04:28', output: '对比表已生成，含技能评分、工作年限、期望薪资、优劣势总结' },
       ],
     },
-    { id: 't2', title: '面试时间协调 — 张某某 & 李某某', status: 'done', time: '10:15', startDate: '2026/05/13', completedAt: '05/13 10:15:43', duration: '0m 43s', result: '已同步至飞书日历', taskType: 'chat',
+    { id: 't2', title: '面试时间协调 — 张某某 & 李某某', status: 'done', time: '10:15', startDate: '2026/05/13', completedAt: '05/13 10:15:43', duration: '0m 43s', result: '已同步至系统日历', taskType: 'chat',
       steps: [
-        { id: 's1', name: '日历可用性查询', status: 'done', desc: '读取面试官与候选人飞书日历空闲时段', time: '10:15:00', output: '检测到 3 个共同空闲时段：3月31日 14:00/15:00/16:00' },
+        { id: 's1', name: '日历可用性查询', status: 'done', desc: '读取面试官与候选人系统日历空闲时段', time: '10:15:00', output: '检测到 3 个共同空闲时段：3月31日 14:00/15:00/16:00' },
         { id: 's2', name: '时间确认', status: 'done', desc: '发送时间选择消息给候选人，等待确认', time: '10:15:20', output: '候选人张某某选择 14:00，李某某选择 15:30' },
-        { id: 's3', name: '日历写入', status: 'done', desc: '创建飞书日历事件并发送邀请', time: '10:15:43', output: '日历事件已创建，面试官、候选人均已收到邀请' },
+        { id: 's3', name: '日历写入', status: 'done', desc: '创建系统日历事件并发送邀请', time: '10:15:43', output: '日历事件已创建，面试官、候选人均已收到邀请' },
       ],
     },
     { id: 't3', title: '薪酬 Benchmark 报告生成 — 产品经理', status: 'running', time: '11:02', startDate: '2026/05/13', taskType: 'scheduled',
@@ -300,11 +319,11 @@ const MOCK_TASKS: Record<string, TaskItem[]> = {
     },
   ],
   'de-006': [
-    { id: 't1', title: '日报生成 — 3月29日运营核心指标', status: 'done', time: '08:00', startDate: '2026/05/13', completedAt: '05/13 08:01:12', duration: '1m 12s', result: '已推送钉钉群', taskType: 'scheduled',
+    { id: 't1', title: '日报生成 — 3月29日运营核心指标', status: 'done', time: '08:00', startDate: '2026/05/13', completedAt: '05/13 08:01:12', duration: '1m 12s', result: '已推送工作群', taskType: 'scheduled',
       steps: [
         { id: 's1', name: '数据拉取', status: 'done', desc: '从数仓拉取昨日运营核心指标', time: '08:00:00', output: 'DAU、GMV、转化率、留存率等 18 项指标拉取完成' },
         { id: 's2', name: 'AI 分析', status: 'done', desc: '对异常波动指标进行智能解读', time: '08:00:38', output: '发现 DAU 环比下降 3.2%，AI 判断原因：节假日效应，属正常波动' },
-        { id: 's3', name: '报告生成与推送', status: 'done', desc: '生成日报文档，推送至钉钉运营群', time: '08:01:12', output: '日报已推送，@相关负责人' },
+        { id: 's3', name: '报告生成与推送', status: 'done', desc: '生成日报文档，推送至运营工作群', time: '08:01:12', output: '日报已推送，@相关负责人' },
       ],
     },
     { id: 't2', title: '周报生成 — 第13周', status: 'done', time: '08:01', startDate: '2026/05/13', completedAt: '05/13 08:04:07', duration: '3m 07s', result: '已推送邮件订阅列表', taskType: 'scheduled',
@@ -340,7 +359,7 @@ const MOCK_TASKS: Record<string, TaskItem[]> = {
         { id: 's3', name: '风险条款识别', status: 'done', desc: 'AI 多步推理识别高风险语义模式', time: '10:15:44', output: '识别到 2 处高风险：第11条「违约赔偿上限」、第16条「数据归属权」' },
         { id: 's4', name: '人工确认 · 风险条款1', status: 'done', desc: '等待法务人员确认第11条处置方案', time: '10:16:30', output: '法务已确认：建议修改违约赔偿上限为合同总价30%，对方接受' },
         { id: 's5', name: '人工确认 · 风险条款2', status: 'done', desc: '等待法务人员确认第16条处置方案', time: '10:17:05', output: '法务已确认：增加数据归属权补充协议，需对方法务盖章' },
-        { id: 's6', name: '审核报告生成', status: 'done', desc: '汇总审核结论，生成结构化报告', time: '10:18:43', output: '审核报告已生成，含风险说明与修改建议，已推送至飞书文档' },
+        { id: 's6', name: '审核报告生成', status: 'done', desc: '汇总审核结论，生成结构化报告', time: '10:18:43', output: '审核报告已生成，含风险说明与修改建议，已推送至在线文档' },
       ],
     },
     {
@@ -856,7 +875,7 @@ interface ChatMessage {
   time: string;
   empId?: string;
   empName?: string;
-  kind?: 'normal' | 'step' | 'tool-call' | 'human-pending';
+  kind?: 'normal' | 'step' | 'tool-call' | 'human-pending' | 'op-template-select';
   toolCard?: ToolCard;
 }
 
@@ -904,20 +923,20 @@ const INIT_CONVERSATIONS: IMConversation[] = [
   },
   {
     id: 'conv-2', type: 'single', empIds: ['de-002'], name: 'HR 招聘助手',
-    pinned: false, lastTime: '10:15', lastText: '面试时间已同步至飞书日历',
+    pinned: false, lastTime: '10:15', lastText: '面试时间已同步至系统日历',
     messages: [
       { id: 'm4', role: 'bot', text: '您好！我是 HR 招聘助手，支持简历筛选、面试安排和薪酬对标，请问有什么可以帮您？', time: '09:00', empId: 'de-002', empName: 'HR 招聘助手' },
       { id: 'm5', role: 'user', text: '帮我安排两位候选人的面试时间', time: '10:10' },
-      { id: 'm6', role: 'bot', text: '面试时间已协调完成，已同步至飞书日历，面试官和候选人均已收到邀请。', time: '10:15', empId: 'de-002', empName: 'HR 招聘助手' },
+      { id: 'm6', role: 'bot', text: '面试时间已协调完成，已同步至系统日历，面试官和候选人均已收到邀请。', time: '10:15', empId: 'de-002', empName: 'HR 招聘助手' },
     ],
   },
   {
     id: 'conv-3', type: 'single', empIds: ['de-006'], name: '运营数据助手',
-    pinned: false, lastTime: '08:01', lastText: '日报已推送至钉钉运营群',
+    pinned: false, lastTime: '08:01', lastText: '日报已推送至运营工作群',
     messages: [
       { id: 'm7', role: 'bot', text: '您好！我是运营数据助手，负责日报、周报自动生成和运营指标监控，请问有什么需要？', time: '08:00', empId: 'de-006', empName: '运营数据助手' },
       { id: 'm8', role: 'user', text: '今天的日报生成了吗？', time: '08:00' },
-      { id: 'm9', role: 'bot', text: '今日日报已生成并推送至钉钉运营群，本日 DAU 环比昨日持平，可在左侧任务列表查看详情。', time: '08:01', empId: 'de-006', empName: '运营数据助手' },
+      { id: 'm9', role: 'bot', text: '今日日报已生成并推送至运营工作群，本日 DAU 环比昨日持平，可在左侧任务列表查看详情。', time: '08:01', empId: 'de-006', empName: '运营数据助手' },
     ],
   },
   {
@@ -927,6 +946,13 @@ const INIT_CONVERSATIONS: IMConversation[] = [
       { id: 'c1', role: 'bot', text: '您好！我是合同审核助手，支持合同全文解析、风险条款识别与法律依据匹配。审核过程会在关键节点请您确认，确保结论准确可靠。请上传需要审核的合同文件或直接描述审核需求。', time: '13:50', empId: 'de-009', empName: '合同审核助手', kind: 'normal' },
     ],
   },
+  {
+    id: 'conv-5', type: 'single', empIds: ['de-012'], name: '作业方案助手',
+    pinned: false, lastTime: '09:15', lastText: '已为您匹配 3 套方案模板，请选择',
+    messages: [
+      { id: 'op-m1', role: 'bot', kind: 'normal', text: '您好！我是作业方案助手，专注于能源行业作业方案生成。\n\n请上传背景材料或设计方案（支持 PDF / Word / 图片），我将自动识别作业类型并为您匹配对应的方案模板。', time: '09:00', empId: 'de-012', empName: '作业方案助手' },
+    ],
+  },
 ];
 
 // ── 技能透明展示 ──────────────────────────────────────────
@@ -934,7 +960,7 @@ const AGENT_SKILLS: Record<string, { name: string; icon: string; desc: string }[
   '法务合规助手': [
     { name: '法律法规检索', icon: '⚖️', desc: '检索相关法律法规条文' },
     { name: 'PDF 解析',    icon: '📄', desc: '解析文件内容' },
-    { name: '飞书推送',    icon: '🔔', desc: '发送通知至飞书' },
+    { name: '消息推送',    icon: '🔔', desc: '发送通知至消息渠道' },
   ],
   '合同审核助手': [
     { name: 'PDF 解析',      icon: '📄', desc: '解析合同文件' },
@@ -944,7 +970,7 @@ const AGENT_SKILLS: Record<string, { name: string; icon: string; desc: string }[
   'HR 招聘助手': [
     { name: '简历解析',    icon: '📋', desc: '结构化解析候选人简历' },
     { name: '日程预约',    icon: '📅', desc: '自动安排面试日程' },
-    { name: '飞书推送',    icon: '🔔', desc: '面试通知发送至飞书' },
+    { name: '消息推送',    icon: '🔔', desc: '面试通知发送至消息渠道' },
   ],
   '智能客服分发': [
     { name: '意图识别',    icon: '🎯', desc: '分析用户意图并路由' },
@@ -954,7 +980,13 @@ const AGENT_SKILLS: Record<string, { name: string; icon: string; desc: string }[
   '运营数据助手': [
     { name: '数据报表生成', icon: '📊', desc: '生成运营分析报表' },
     { name: '知识库检索',  icon: '🔎', desc: '检索运营知识库' },
-    { name: '飞书推送',    icon: '🔔', desc: '推送报表至飞书群' },
+    { name: '消息推送',    icon: '🔔', desc: '推送报表至工作群' },
+  ],
+  '作业方案助手': [
+    { name: '意图识别',   icon: '🎯', desc: '识别上传材料的作业类型与场景' },
+    { name: '模板匹配',   icon: '📋', desc: '匹配对应的能源行业方案模板' },
+    { name: '文档生成',   icon: '📝', desc: '生成可在线填写的作业方案文档' },
+    { name: 'WPS 集成',  icon: '📄', desc: '在线文档编辑与人工待填项引导' },
   ],
 };
 
@@ -989,6 +1021,8 @@ const INIT_CONTACT_LIST: ContactEntry[] = [
     lastText: '公文草稿已生成，请确认后发送', lastTime: '10:20', sortOrder: 5 },
   { id: 'de-011', type: 'single', name: '会议纪要助手', empIds: ['de-011'],
     lastText: '本次会议纪要已整理完毕', lastTime: '15:30', sortOrder: 6 },
+  { id: 'de-012', type: 'single', name: '作业方案助手', empIds: ['de-012'],
+    lastText: '已为您匹配 3 套方案模板，请选择', lastTime: '09:15', sortOrder: 7 },
 ];
 
 export const DigitalEmployeePanel: React.FC = () => {
@@ -1023,6 +1057,9 @@ export const DigitalEmployeePanel: React.FC = () => {
   const [notifPanelOpen, setNotifPanelOpen] = React.useState(false);
   const [readNotifIds, setReadNotifIds] = React.useState<Set<string>>(new Set());
   // ── 右侧任务面板展开/收起 ──
+  // ── WPS 作业方案编辑器 ──
+  const [showOpPlanEditor, setShowOpPlanEditor] = React.useState(false);
+  const [opPlanTemplate, setOpPlanTemplate] = React.useState('');
   const [rightPanelCollapsed, setRightPanelCollapsed] = React.useState(false);
   const [rightPanelWidth, setRightPanelWidth] = React.useState(290);
 
@@ -1144,6 +1181,38 @@ export const DigitalEmployeePanel: React.FC = () => {
     } : c));
     setChatInput('');
     setSending(true);
+
+    // de-012 作业方案助手：意图识别 → 模板匹配 → 选择模板
+    if (activeConv.type === 'single' && activeConv.empIds[0] === 'de-012') {
+      const convId = activeConvId;
+      const empId = 'de-012';
+      const empName = '作业方案助手';
+      let seq = Date.now();
+      const nid = () => `op-${++seq}`;
+      const ts = getTime();
+      const push = (msg: ChatMessage) => setConversations(prev => prev.map(c =>
+        c.id === convId ? { ...c, messages: [...c.messages, msg], lastTime: msg.time, lastText: msg.text.slice(0, 20) } : c
+      ));
+
+      setTimeout(() => push({ id: nid(), role: 'bot', kind: 'step', text: '◉ 材料已接收，正在解析文档内容...', time: ts, empId, empName }), 400);
+      setTimeout(() => push({ id: nid(), role: 'bot', kind: 'step', text: '◉ 正在调用意图识别模型，分析作业类型...', time: ts, empId, empName }), 1200);
+      setTimeout(() => push({
+        id: nid(), role: 'bot', kind: 'tool-call', time: ts, empId, empName,
+        text: '意图识别',
+        toolCard: {
+          toolName: 'intent_classifier',
+          request: JSON.stringify({ input: text, model: 'energy-intent-v2', industry: '能源电力' }, null, 2),
+          response: JSON.stringify({ intent: '变电站年度检修', confidence: 0.96, sub_type: '220kV', suggested_templates: 3 }, null, 2),
+        },
+      }), 2200);
+      setTimeout(() => push({ id: nid(), role: 'bot', kind: 'step', text: '◉ 识别完成：变电站年度检修（置信度 96%），正在检索方案模板库...', time: ts, empId, empName }), 3200);
+      setTimeout(() => push({
+        id: nid(), role: 'bot', kind: 'op-template-select', time: ts, empId, empName,
+        text: '已为您匹配以下 3 套方案模板，请选择后点击「进入方案编辑」：',
+      }), 4400);
+      setTimeout(() => setSending(false), 4500);
+      return;
+    }
 
     // de-009 合同审核助手：AI Agent 逐步推理模式
     if (activeConv.type === 'single' && activeConv.empIds[0] === 'de-009') {
@@ -1277,7 +1346,7 @@ export const DigitalEmployeePanel: React.FC = () => {
                 }, 400);
                 setTimeout(() => {
                   pushMsg({ id: nextId(), role: 'bot', kind: 'normal', time: getTime(), empId, empName,
-                    text: `✅ **合同审核完成**\n\n**文件**：供应商合同_2026Q2.pdf（18页，31条款）\n\n**审核结论**：\n• 高风险条款 2 项 ⚠️（已由您逐一确认）\n• 中风险条款 5 项（建议法务复查）\n• 低风险条款 8 项（可接受）\n\n**已确认处理方式**：\n• 第8条违约责任：${confirmText}\n• 第12条单方解约权：${confirmText2}\n\n审核报告已生成，包含风险标注、修改建议与法律依据引用，可直接导出或同步至飞书文档。` });
+                    text: `✅ **合同审核完成**\n\n**文件**：供应商合同_2026Q2.pdf（18页，31条款）\n\n**审核结论**：\n• 高风险条款 2 项 ⚠️（已由您逐一确认）\n• 中风险条款 5 项（建议法务复查）\n• 低风险条款 8 项（可接受）\n\n**已确认处理方式**：\n• 第8条违约责任：${confirmText}\n• 第12条单方解约权：${confirmText2}\n\n审核报告已生成，包含风险标注、修改建议与法律依据引用，可直接导出或同步至在线文档。` });
                   setSending(false);
                 }, 1800);
               };
@@ -1369,7 +1438,7 @@ export const DigitalEmployeePanel: React.FC = () => {
         { id: 'm10', kind: 'normal', text: '⚠️ **第16条 · 数据归属权**\n协议对"原始数据"与"基于原始数据产生的衍生数据"归属权表述模糊，存在数据权益纠纷风险。\n\n**建议**：增加补充协议，明确：原始数据归属甲方，衍生分析数据由双方协商共享比例。\n\n请选择处理方式：' },
         { id: 'm11', kind: 'human-pending', text: '第16条「数据归属权」处置方案', chips: ['✓ 同意增加补充协议', '↩ 保持原文，标注风险提示'], chipChoice: '✓ 同意增加补充协议' },
         { id: 'm12', kind: 'step', text: '全部高风险条款确认完成，生成审核报告...' },
-        { id: 'm13', kind: 'normal', text: '✅ **审核完成**\n\n**审核结论**：发现 2 处高风险条款，已完成人工确认，建议签署前完成以下操作：\n\n1. 第11条：重新谈判违约赔偿上限至30%\n2. 第16条：签署数据归属权补充协议\n\n📄 详细审核报告已生成并推送至飞书文档，请法务负责人复核后归档。' },
+        { id: 'm13', kind: 'normal', text: '✅ **审核完成**\n\n**审核结论**：发现 2 处高风险条款，已完成人工确认，建议签署前完成以下操作：\n\n1. 第11条：重新谈判违约赔偿上限至30%\n2. 第16条：签署数据归属权补充协议\n\n📄 详细审核报告已生成并推送至在线文档，请法务负责人复核后归档。' },
       ],
       't-902': [
         { id: 'm1', kind: 'step', text: '批量审核任务已接收 · 正在处理 8 份劳动合同' },
@@ -2181,6 +2250,13 @@ export const DigitalEmployeePanel: React.FC = () => {
   };
 
   return (
+    <>
+      {showOpPlanEditor && (
+        <OperationPlanEditor
+          templateName={opPlanTemplate}
+          onBack={() => setShowOpPlanEditor(false)}
+        />
+      )}
     <div style={{ width: '100%', display: 'flex', gap: 0, height: '100%', alignSelf: 'stretch', flex: 1, minHeight: 0 }}>
 
       {/* ────────────────────────────────────────────────────────── */}
@@ -2399,6 +2475,16 @@ export const DigitalEmployeePanel: React.FC = () => {
                 <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{activeEmp.domain}</div>
               )}
             </div>
+            {tasks.length > 0 && (
+              <Tooltip title={rightPanelCollapsed ? '展开任务栏' : '收起任务栏'}>
+                <button
+                  onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+                  style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 7, border: '1px solid #e5e7eb', background: rightPanelCollapsed ? '#f0f0ff' : '#fff', color: rightPanelCollapsed ? '#6366F1' : '#6b7280', fontSize: 14, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
+                >
+                  {rightPanelCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                </button>
+              </Tooltip>
+            )}
             </div>
             {/* 已装配技能 */}
             {(() => {
@@ -2564,6 +2650,48 @@ export const DigitalEmployeePanel: React.FC = () => {
                 }
 
                 // ── normal（包括已确认后的 human-pending）：标准气泡 ──
+
+                // ── op-template-select：方案模板选择卡片 ──
+                if (msg.kind === 'op-template-select') {
+                  const templates = [
+                    { name: '220kV变电站年度检修标准模板', tag: '推荐', desc: '适用于220kV及以上变电站年度预防性试验与设备检修，含13项人工待填项', fills: 13, icon: '⚡' },
+                    { name: '变电站专项消缺作业模板', tag: '', desc: '适用于设备缺陷消除及专项整治作业，含10项人工待填项', fills: 10, icon: '🔧' },
+                    { name: '新设备投运检修方案模板', tag: '', desc: '适用于新设备首次投运前的调试与验收检修，含15项人工待填项', fills: 15, icon: '📋' },
+                  ];
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: empAvatar, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{empChar}</div>
+                      <div style={{ maxWidth: '88%' }}>
+                        <div style={{ padding: '9px 13px', fontSize: 13, lineHeight: 1.6, borderRadius: '14px 14px 14px 2px', background: '#fff', color: '#1a1a1a', border: '1px solid #ebebeb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 10 }}>
+                          {msg.text}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {templates.map((tpl, ti) => (
+                            <div key={ti} style={{ background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+                              <span style={{ fontSize: 22, flexShrink: 0 }}>{tpl.icon}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{tpl.name}</span>
+                                  {tpl.tag && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#fef3c7', color: '#92400e', fontWeight: 600 }}>{tpl.tag}</span>}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{tpl.desc}</div>
+                                <span style={{ fontSize: 11, color: '#9ca3af' }}>待填项：{tpl.fills} 项</span>
+                              </div>
+                              <button
+                                onClick={() => { setOpPlanTemplate(tpl.name); setShowOpPlanEditor(true); }}
+                                style={{ flexShrink: 0, padding: '6px 14px', background: '#6366F1', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              >
+                                进入方案编辑
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 10, color: '#ccc', marginTop: 6 }}>{msg.time}</div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={msg.id} style={{ display: 'flex', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
                     {msg.role === 'bot' && (
@@ -2931,6 +3059,7 @@ export const DigitalEmployeePanel: React.FC = () => {
       })()}
 
     </div>
+    </>
   );
 };
 
@@ -7952,7 +8081,7 @@ const Frontend: React.FC<FrontendProps> = ({ onBackToAdmin, selectedSkill }) => 
                 {
                   step: 'Step 3',
                   title: '一键部署上线',
-                  desc: '按需进行飞书、钉钉等消息渠道的配置，完成上线',
+                  desc: '按需进行消息渠道配置，完成上线',
                 },
               ].map((item) => (
                 <div key={item.step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>

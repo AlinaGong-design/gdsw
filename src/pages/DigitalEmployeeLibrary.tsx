@@ -52,17 +52,17 @@ const EMP_360_MINI: Record<string, { score: number; calls: number }> = {
 };
 const MOCK_EMPLOYEES: DigitalEmployeeItem[] = [
   { id: 'de-001', name: '法务合规助手', dept: '法务部',   domain: '法务域', description: '合同审查、合规检查、法律风险评估，支持多种合同模板自动识别与条款提取', status: 'published', version: 'v2.1.0',      scope: 'company', updateTime: '2026-03-10', callCount: 4821, score: 4.8, heat: 95, type: '通用款' },
-  { id: 'de-002', name: 'HR 招聘助手',  dept: '人力资源', domain: '人力域', description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入飞书日历',           status: 'published', version: 'v1.3.2',      scope: 'dept',    updateTime: '2026-03-05', callCount: 3256, score: 4.6, heat: 78, type: '定制款' },
+  { id: 'de-002', name: 'HR 招聘助手',  dept: '人力资源', domain: '人力域', description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入系统日历',           status: 'published', version: 'v1.3.2',      scope: 'dept',    updateTime: '2026-03-05', callCount: 3256, score: 4.6, heat: 78, type: '定制款' },
   { id: 'de-003', name: '财务报表助手', dept: '财务部',   domain: '财务域', description: '定时拉取业务数据，AI 生成分析报告，异常数据预警推送',                     status: 'stationed',   version: 'v3.0.0-beta', scope: 'dept',    updateTime: '2026-03-14', callCount: 2890, score: 4.9, heat: 88, type: '通用款' },
-  { id: 'de-004', name: '代码审查助手', dept: '技术部',   domain: '技术域', description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 GitLab/GitHub',   status: 'paused',    version: 'v1.1.0',      scope: 'dept',    updateTime: '2026-02-28', callCount: 1654, score: 4.5, heat: 62, type: '升级款' },
+  { id: 'de-004', name: '代码审查助手', dept: '技术部',   domain: '技术域', description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 代码仓库',   status: 'paused',    version: 'v1.1.0',      scope: 'dept',    updateTime: '2026-02-28', callCount: 1654, score: 4.5, heat: 62, type: '升级款' },
   { id: 'de-005', name: '智能客服分发', dept: '客户成功', domain: '客服域', description: '意图识别、多轮路由分发、自动记录工单，支持人工接管',                       status: 'draft',     version: 'v0.1.0',      scope: 'private', updateTime: '2026-03-15', callCount: 8923, score: 4.7, heat: 91, type: '通用款' },
-  { id: 'de-006', name: '运营数据助手', dept: '运营部',   domain: '运营域', description: '自动汇总运营核心指标，生成日/周/月报告，支持钉钉/飞书推送',               status: 'published', version: 'v1.2.0',      scope: 'company', updateTime: '2026-03-12', callCount: 1243, score: 4.3, heat: 55, type: '定制款' },
+  { id: 'de-006', name: '运营数据助手', dept: '运营部',   domain: '运营域', description: '自动汇总运营核心指标，生成日/周/月报告，支持消息渠道推送',               status: 'published', version: 'v1.2.0',      scope: 'company', updateTime: '2026-03-12', callCount: 1243, score: 4.3, heat: 55, type: '定制款' },
 ];
 
 const MOCK_EMPLOYEE_HISTORY: EmployeeHistoryEvent[] = [
   { id: 'h1', kind: 'publish', time: '2026-02-15 16:00', user: '李四', desc: 'v2.0.0', version: { versionId: 'v2.0.0', version: 'v2.0.0', changelog: '重构 Prompt 结构，支持多类型合同模板', publishedAt: '2026-02-15 16:00', publishedBy: '李四' } },
   { id: 'h2', kind: 'save',    time: '2026-02-20 10:30', user: '张三', desc: '优化风险识别提示词' },
-  { id: 'h3', kind: 'publish', time: '2026-02-28 09:15', user: '张三', desc: 'v2.0.1', version: { versionId: 'v2.0.1', version: 'v2.0.1', changelog: '修复飞书文档权限异常问题', publishedAt: '2026-02-28 09:15', publishedBy: '张三' } },
+  { id: 'h3', kind: 'publish', time: '2026-02-28 09:15', user: '张三', desc: 'v2.0.1', version: { versionId: 'v2.0.1', version: 'v2.0.1', changelog: '修复在线文档权限异常问题', publishedAt: '2026-02-28 09:15', publishedBy: '张三' } },
   { id: 'h4', kind: 'save',    time: '2026-03-05 14:00', user: '张三', desc: '新增风险等级标注逻辑' },
   { id: 'h5', kind: 'publish', time: '2026-03-10 14:30', user: '张三', desc: 'v2.1.0', version: { versionId: 'v2.1.0', version: 'v2.1.0', changelog: '优化合同识别准确率，新增风险等级标注', publishedAt: '2026-03-10 14:30', publishedBy: '张三' } },
 ];
@@ -183,7 +183,7 @@ const VIBE_CODING_SKILLS = [
 const SKILL_LIST = [
   // 基础技能
   { id: 'sk1',    name: '网络搜索',      type: 'Skill',  icon: '🔍', desc: '实时搜索互联网信息，获取最新资讯与数据' },
-  { id: 'sk2',    name: '飞书文档',      type: 'Skill',  icon: '📄', desc: '飞书文档读写与管理，支持多维表格操作' },
+  { id: 'sk2',    name: '在线文档',      type: 'Skill',  icon: '📄', desc: '在线文档读写与管理，支持多维表格操作' },
   { id: 'sk3',    name: 'Python 执行',   type: 'Skill',  icon: '🐍', desc: '执行 Python 代码，处理结构化数据与自动化任务' },
   { id: 'sk4',    name: 'PDF 解析',      type: 'Skill',  icon: '📃', desc: '解析 PDF 文档内容，提取文字、表格与结构化信息' },
   { id: 'sk-d1',  name: '图表生成',      type: 'Skill',  icon: '📈', desc: '将结构化数据转换为可视化图表（柱/折/饼/散点图）' },
@@ -211,8 +211,8 @@ const MCP_SERVERS = [
   { id: 'mcp-f2', name: 'Everything MCP',    desc: '集成搜索、文件、浏览器等全功能 MCP 超级套件',          icon: '🔮' },
   // 协作与业务
   { id: 'mcp1',   name: '数据库连接器',      desc: '连接企业内部 MySQL / Oracle / PostgreSQL',             icon: '🗄️' },
-  { id: 'mcp2',   name: '飞书 MCP',          desc: '读写飞书文档、日历、审批、多维表格',                   icon: '📋' },
-  { id: 'mcp3',   name: 'GitHub MCP',        desc: 'PR 管理、Issue 操作、代码仓库读写',                    icon: '🐙' },
+  { id: 'mcp2',   name: 'elink MCP',          desc: '读写在线文档、系统日历、审批、在线表格',                   icon: '📋' },
+  { id: 'mcp3',   name: '代码仓库 MCP',        desc: 'PR 管理、Issue 操作、代码仓库读写',                    icon: '🐙' },
   { id: 'mcp-b1', name: 'Slack MCP',         desc: '发送消息、管理频道、搜索历史对话记录',                 icon: '💬' },
   { id: 'mcp-b2', name: 'Notion MCP',        desc: '读写 Notion 数据库、页面与看板内容',                   icon: '📓' },
   { id: 'mcp4',   name: 'CRM 连接器',        desc: '客户数据读写、商机跟踪、销售漏斗分析',                 icon: '📊' },
@@ -227,8 +227,8 @@ const RESPONSE_STYLES = [
 const CHANNELS = [
   { id: 'api',    label: 'REST API',   desc: '标准 HTTP 接口，支持外部系统集成', icon: '🔌' },
   { id: 'flow',   label: '工作流节点', desc: '作为节点嵌入工作流',               icon: '⚡' },
-  { id: 'feishu', label: '飞书机器人', desc: '以飞书群机器人形式提供服务',       icon: '🪶' },
-  { id: 'ding',   label: '钉钉机器人', desc: '以钉钉群机器人形式提供服务',       icon: '📎' },
+  { id: 'feishu', label: 'elink', desc: '以elink群机器人形式提供服务',       icon: '🪶' },
+  { id: 'ding',   label: 'elink机器人', desc: '以工作群机器人形式提供服务',       icon: '📎' },
 ];
 const DEFAULT_PROMPT = `你是「{员工名称}」，{部门}的{角色定位}。
 
@@ -576,8 +576,8 @@ const SKILL_FILE_DATA: Record<string, SkillFileData> = {
     rootName: 'feishu-doc-skill',
     nodes: [
       { name: 'evals', type: 'folder', children: [{ name: 'evals.json', type: 'file', content: `[\n  { "action": "读取多维表格", "table_id": "mock-001" },\n  { "action": "写入文档", "doc_id": "mock-002", "content": "测试内容" }\n]` }] },
-      { name: 'SKILL.md', type: 'file', content: `**name: feishu-doc-skill description:** > 飞书文档读写与管理，支持多维表格操作。\n\n# 飞书文档技能\n\n你是飞书生态的文档管理专家，能够读取、写入和管理飞书云文档及多维表格。\n\n## 核心能力\n\n1. **文档管理**\n   - 创建、编辑飞书文档\n   - 格式化文本与表格\n   - 管理文档权限\n\n2. **多维表格**\n   - 读写多维表格数据\n   - 执行数据筛选与统计\n   - 批量数据操作\n\n## 权限要求\n\n- 需要飞书 OAuth 授权\n- 读取权限：docs:read\n- 写入权限：docs:write` },
-      { name: 'SOUL.md', type: 'file', content: `# 飞书文档助手 Soul\n\n你是飞书生态的熟练使用者，了解飞书文档的所有功能与限制。\n\n## 工作原则\n1. 操��前确认权限\n2. 批量操作前进行小样本测试\n3. 写入操作必须获得用户确认` },
+      { name: 'SKILL.md', type: 'file', content: `**name: feishu-doc-skill description:** > 在线文档读写与管理，支持多维表格操作。\n\n# 在线文档技能\n\n你是elink生态的文档管理专家，能够读取、写入和管理在线云文档及在线表格。\n\n## 核心能力\n\n1. **文档管理**\n   - 创建、编辑在线文档\n   - 格式化文本与表格\n   - 管理文档权限\n\n2. **在线表格**\n   - 读写在线表格数据\n   - 执行数据筛选与统计\n   - 批量数据操作\n\n## 权限要求\n\n- 需要elink OAuth 授权\n- 读取权限：docs:read\n- 写入权限：docs:write` },
+      { name: 'SOUL.md', type: 'file', content: `# 在线文档助手 Soul\n\n你是elink生态的熟练使用者，了解在线文档的所有功能与限制。\n\n## 工作原则\n1. 操作前确认权限\n2. 批量操作前进行小样本测试\n3. 写入操作必须获得用户确认` },
     ],
   },
   sk3: {
@@ -1275,10 +1275,10 @@ const EmployeeConfigPage: React.FC<{
         { name: '文档解析', desc: '调用 PDF 解析引擎提取全文结构与条款段落' },
         { name: '合规规则匹配', desc: '逐条检索法律法规库，完成条款交叉映射' },
         { name: '风险识别', desc: 'AI 分析高风险语义模式，标注异常条款' },
-        { name: '报告生成', desc: '生成结构化审查报告，推送至飞书文档' },
+        { name: '报告生成', desc: '生成结构化审查报告，推送至在线文档' },
       ],
       advanceLogs: ['✓ 文档解析完成，提取 23 个条款段落', '✓ 合规规则匹配完成，发现 2 处高风险', '✓ 审查报告已生成，含风险标注与修改建议'],
-      aiReply: `合同审查完成，发现以下风险：\n\n**高风险（2项）**\n• 第8条「违约责任上限」：赔偿上限过低，建议参考合同总金额的 30%\n• 第12条「单方解约权」：乙方可无条件解约，建议增加限制条件\n\n报告已推送至飞书文档，请法务负责人确认后签署。`,
+      aiReply: `合同审查完成，发现以下风险：\n\n**高风险（2项）**\n• 第8条「违约责任上限」：赔偿上限过低，建议参考合同总金额的 30%\n• 第12条「单方解约权」：乙方可无条件解约，建议增加限制条件\n\n报告已推送至在线文档，请法务负责人确认后签署。`,
     } : isHR ? {
       planDesc: '解析岗位需求，制定简历筛选与候选人评估策略',
       execDesc: '调用简历解析模型，匹配岗位要求，生成候选人评分',
@@ -1301,10 +1301,10 @@ const EmployeeConfigPage: React.FC<{
         { name: '简历解析', desc: '批量解析简历文件，提取结构化信息' },
         { name: '岗位匹配', desc: '与 JD 要求交叉比对，生成匹配评分' },
         { name: '候选人排序', desc: '综合打分排序，筛出 TOP 候选名单' },
-        { name: '面试通知', desc: '自动发送面试邀请并协调飞书日历时间' },
+        { name: '面试通知', desc: '自动发送面试邀请并协调系统日历时间' },
       ],
       advanceLogs: ['✓ 简历解析完成，共处理 38 份', '✓ 岗位匹配完成，TOP5 候选人已筛出', '✓ 面试邀请已生成，等待确认后发送'],
-      aiReply: `简历筛选完成，共处理 38 份，推荐以下候选人：\n\n**TOP 候选人**\n• 张**（92分）：5年数据分析经验，Python/SQL 熟练\n• 李**（88分）：3年相关经验，有大厂背景\n• 王**（85分）：应届硕士，项目经验丰富\n\n面试邀请草稿已生成，确认后可一键发送并同步飞书日历。`,
+      aiReply: `简历筛选完成，共处理 38 份，推荐以下候选人：\n\n**TOP 候选人**\n• 张**（92分）：5年数据分析经验，Python/SQL 熟练\n• 李**（88分）：3年相关经验，有大厂背景\n• 王**（85分）：应届硕士，项目经验丰富\n\n面试邀请草稿已生成，确认后可一键发送并同步系统日历。`,
     } : isFinance ? {
       planDesc: '拉取业务数据，制定财务报表分析与异常检测策略',
       execDesc: '连接 ERP 数据源，执行多维度财务指标计算与异常检测',
@@ -1328,16 +1328,16 @@ const EmployeeConfigPage: React.FC<{
         { name: '数据拉取', desc: '从 ERP / 数据仓库同步最新财务数据' },
         { name: '指标计算', desc: '计算营收、成本、利润等核心财务指标' },
         { name: '异常检测', desc: 'AI 识别预算偏差与异常波动项' },
-        { name: '报告生成', desc: '生成图文报告并推送至钉钉 / 飞书' },
+        { name: '报告生成', desc: '生成图文报告并推送至工作群' },
       ],
       advanceLogs: ['✓ 数据拉取完成，12 个业务线已同步', '✓ 指标计算完成，发现 1 项预算异常', '✓ 财务分析报告已生成，含异常预警标注'],
-      aiReply: `本月财务报表分析完成：\n\n**核心指标**\n• 营收：¥3,842万（同比+18.3%，环比+5.1%）\n• 毛利率：42.1%（同比↓2.3pp）\n\n**⚠️ 异常预警**：研发成本超预算 23%，建议控制本月新增采购\n\n报告已推送至财务负责人飞书，超预算项已触发审批流程。`,
+      aiReply: `本月财务报表分析完成：\n\n**核心指标**\n• 营收：¥3,842万（同比+18.3%，环比+5.1%）\n• 毛利率：42.1%（同比↓2.3pp）\n\n**⚠️ 异常预警**：研发成本超预算 23%，建议控制本月新增采购\n\n报告已推送至财务负责人，超预算项已触发审批流程。`,
     } : isTech ? {
       planDesc: '获取代码变更内容，制定审查规则与安全扫描策略',
       execDesc: '调用静态分析引擎，执行代码质量与安全漏洞扫描',
       planLogs: [
         { text: '提取任务关键词：代码审查 / 安全扫描 / PR 分析', kind: 'data' },
-        { text: '拉取 GitLab PR #1024 变更文件列表...', kind: 'info' },
+        { text: '拉取 代码仓库 PR #1024 变更文件列表...', kind: 'info' },
         { text: '执行计划生成完毕，共 4 个子步骤', kind: 'ok' },
       ],
       execLogs: [
@@ -1352,7 +1352,7 @@ const EmployeeConfigPage: React.FC<{
         { text: '审查建议格式符合团队规范', kind: 'ok' },
       ],
       steps: [
-        { name: '代码获取', desc: '拉取 GitLab/GitHub PR 变更文件内容' },
+        { name: '代码获取', desc: '拉取代码仓库 PR 变更文件内容' },
         { name: '静态分析', desc: '执行代码质量与规范性检查' },
         { name: '安全扫描', desc: 'AI 识别 SQL 注入、XSS 等安全漏洞' },
         { name: '评论写入', desc: '将审查建议以评论形式写回 PR' },
@@ -1434,7 +1434,7 @@ const EmployeeConfigPage: React.FC<{
         { name: '数据采集', desc: '从数据仓库同步 DAU、转化率等核心指标' },
         { name: '指标汇总', desc: '多维度聚合，计算同比环比变化' },
         { name: '趋势分析', desc: 'AI 识别异常波动与增长机会' },
-        { name: '报告推送', desc: '生成周报并推送至钉钉 / 飞书群' },
+        { name: '报告推送', desc: '生成周报并推送至工作群' },
       ],
       advanceLogs: ['✓ 数据采集完成，覆盖 8 个核心指标', '✓ 指标汇总完成，转化率明显提升', '✓ 运营周报已生成，等待确认后推送'],
       aiReply: `本周运营数据分析完成：\n\n**核心指标**\n• DAU：12.4万（环比+8.2%）✅\n• 留存率：62%（持平）\n• 转化率：3.7%（+0.5pp）✅\n\n转化率连续 3 周提升，与上周活动推送相关。\n运营周报已就绪，确认后一键推送至运营群。`,
@@ -2039,12 +2039,12 @@ const EmployeeConfigPage: React.FC<{
 
               {/* ── 接入渠道 ── */}
               <div>
-                <SectionTitle title="接入渠道" desc="本期支持 API / H5 / 飞书 三种接入方式，可多选" />
+                <SectionTitle title="接入渠道" desc="本期支持 API / H5 / elink 三种接入方式，可多选" />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
                     { id: 'api',    label: 'REST API',  desc: '标准 HTTP 接口，支持外部系统程序化调用', icon: <ApiOutlined /> },
                     { id: 'h5',     label: 'H5 网页',   desc: '适配电脑/移动端，浏览器直接访问，无需安装', icon: <DesktopOutlined /> },
-                    { id: 'feishu', label: '飞书机器人',  desc: '以飞书机器人形式在群组/会话中提供服务', icon: <span style={{ fontSize: 15 }}>🪶</span> },
+                    { id: 'feishu', label: 'elink',  desc: '以elink机器人形式在群组/会话中提供服务', icon: <span style={{ fontSize: 15 }}>🪶</span> },
                   ].map(ch => {
                     const selected = data.channels.includes(ch.id);
                     return (
@@ -2058,7 +2058,7 @@ const EmployeeConfigPage: React.FC<{
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <span style={{ fontSize: 13, fontWeight: 500, color: selected ? '#6366F1' : '#333' }}>{ch.label}</span>
                               {ch.id === 'feishu' && (
-                                <Tooltip title="查看飞书接入文档">
+                                <Tooltip title="查看elink接入文档">
                                   <span
                                     onClick={e => { e.stopPropagation(); window.open('/#feishu-integration-docs', '_blank'); }}
                                     style={{ display: 'inline-flex', alignItems: 'center', color: '#9ca3af', cursor: 'pointer', fontSize: 13, lineHeight: 1, transition: 'color 0.15s' }}
@@ -2077,11 +2077,11 @@ const EmployeeConfigPage: React.FC<{
                           </div>
                         </div>
 
-                        {/* 飞书接入：展开 APP ID / App Secret 填写区 */}
+                        {/* elink接入：展开 APP ID / App Secret 填写区 */}
                         {ch.id === 'feishu' && selected && (
                           <div style={{ marginTop: 8, padding: '14px 16px', borderRadius: 8, border: '1px solid #e0deff', background: '#fafafe', display: 'flex', flexDirection: 'column', gap: 12 }}>
                             <div style={{ fontSize: 12, color: '#6366F1', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <span>🪶</span> 飞书应用凭证配置
+                              <span>🪶</span> elink应用凭证配置
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                               <div>
@@ -2113,7 +2113,7 @@ const EmployeeConfigPage: React.FC<{
                               </div>
                             </div>
                             <div style={{ fontSize: 11, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span>ℹ️</span> 在飞书开放平台创建应用后获取，凭证加密存储
+                              <span>ℹ️</span> 在elink开放平台创建应用后获取，凭证加密存储
                             </div>
                           </div>
                         )}
@@ -3591,7 +3591,7 @@ const DigitalEmployeeLibrary: React.FC = () => {
           {/* API Key 管理 */}
           <ApiKeySection />
           {[
-            { mode: '飞书机器人', icon: <span style={{ fontSize: 18 }}>🪶</span>, color: '#00B96B', desc: '以飞书机器人形式在群组/会话中提供服务，支持群消息、私聊', code: `bot_id: ${selectedEmployee?.id}\nplatform: feishu\ncall_mode: bot` },
+            { mode: 'elink', icon: <span style={{ fontSize: 18 }}>🪶</span>, color: '#00B96B', desc: '以elink机器人形式在群组/会话中提供服务，支持群消息、私聊', code: `bot_id: ${selectedEmployee?.id}\nplatform: feishu\ncall_mode: bot` },
             { mode: 'REST API', icon: <ApiOutlined />, color: '#3B82F6', desc: '标准 HTTP 接口，支持外部系统集成与程序化调用', code: `POST /v1/employees/${selectedEmployee?.id}/chat\nAuthorization: Bearer {YOUR_API_KEY}` },
             { mode: 'H5 网页', icon: <DesktopOutlined />, color: '#6366F1', desc: '适配电脑/移动端，浏览器直接访问，无需安装', code: `https://emp.wanjuan.ai/h5/${selectedEmployee?.id}` },
           ].map(item => (

@@ -174,7 +174,7 @@ const ALL_AGENTS: WjAgent[] = [
 const ALL_APIS: WjApi[] = [
   { id: 'p1', name: 'Anthropic API', endpoint: 'https://api.anthropic.com', method: 'POST', description: 'Claude 系列模型调用接口' },
   { id: 'p2', name: '内部知识库 API', endpoint: 'https://kb.internal.example.com/api', method: 'GET', description: '企业内部知识库检索接口' },
-  { id: 'p3', name: '飞书 Open API', endpoint: 'https://open.feishu.cn/open-apis', method: 'POST', description: '飞书文档、日历、消息等服务接口' },
+  { id: 'p3', name: 'elink Open API', endpoint: 'https://open.feishu.cn/open-apis', method: 'POST', description: '在线文档、系统日历、消息等服务接口' },
   { id: 'p4', name: '数据报表 API', endpoint: 'https://report.example.com/v2', method: 'GET', description: '业务数据报表查询接口' },
 ];
 

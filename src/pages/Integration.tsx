@@ -14,8 +14,8 @@ const { Title, Paragraph } = Typography;
 const Integration: React.FC = () => {
   const services = [
     {
-      title: 'GitHub集成',
-      description: '连接GitHub仓库，自动同步代码和管理工作流',
+      title: '代码仓库集成',
+      description: '连接代码仓库，自动同步代码和管理工作流',
       icon: <GithubOutlined style={{ fontSize: 32, color: '#000' }} />,
       status: 'connected',
       actions: ['配置', '查看详情'],

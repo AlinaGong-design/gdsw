@@ -56,7 +56,7 @@ const EMPLOYEE_STATUS_DATA = [
 const RECENT_EVENTS = [
   { time: '09:42', type: 'success', text: '「合同审查助手」成功完成合同比对任务（38条款）' },
   { time: '09:15', type: 'warning', text: '「财务报表助手」调用超时 3 次，响应 P95 劣化至 4.2s' },
-  { time: '08:57', text: '「公文处理专员」接入飞书群，完成12条消息回复', type: 'info' },
+  { time: '08:57', text: '「公文处理专员」接入工作群，完成12条消息回复', type: 'info' },
   { time: '08:30', type: 'success', text: '「HR 招聘助手」完成本周简历筛选，入围候选人 8 名' },
   { time: '昨日', type: 'error',   text: '「采购询价助手」因权限不足下线，等待修复' },
 ];

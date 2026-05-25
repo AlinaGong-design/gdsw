@@ -51,13 +51,13 @@ const MOCK_TASKS: ScheduledTask[] = [
   {
     id: 'st-001', name: '每日数据晨报', employeeName: '财务报表助手', employeeId: 'de-003',
     triggerType: 'scheduled', cronExpr: '0 8 * * 1-5', cronDesc: '每天 08:00',
-    nlInput: '', taskContent: '拉取昨日销售额、成本、毛利率数据，生成摘要报告并推送到飞书',
+    nlInput: '', taskContent: '拉取昨日销售额、成本、毛利率数据，生成摘要报告并推送到elink',
     channel: 'elink', status: 'active', lastRunAt: '2026-04-02 08:00', nextRunAt: '2026-04-03 08:00',
     runCount: 43, successCount: 43, source: 'task',
   },
   {
     id: 'st-002', name: 'PR 代码审查', employeeName: '代码审查助手', employeeId: 'de-004',
-    triggerType: 'event', cronExpr: '', cronDesc: 'GitHub PR 提交时触发',
+    triggerType: 'event', cronExpr: '', cronDesc: '代码提交 提交时触发',
     nlInput: '', taskContent: '检测到新 PR 时自动执行代码审查，输出质量报告并评论到 PR',
     channel: 'elink', status: 'active', lastRunAt: '2026-04-02 16:32', nextRunAt: '事件触发',
     runCount: 128, successCount: 121, source: 'chat',
@@ -86,16 +86,16 @@ const MOCK_TASKS: ScheduledTask[] = [
 ];
 
 const MOCK_LOGS: TaskRunLog[] = [
-  { id: 'log-001', taskId: 'st-001', runAt: '2026-04-02 08:00:03', status: 'success', duration: '4.2s', output: '财务晨报已生成：昨日销售额 ¥1,248,000，环比+5.2%，毛利率 42.3%。已推送至飞书「财务组」群。' },
-  { id: 'log-002', taskId: 'st-001', runAt: '2026-04-01 08:00:02', status: 'success', duration: '3.8s', output: '财务晨报已生成：昨日销售额 ¥1,186,000，环比-2.1%，毛利率 41.8%。已推送至飞书「财务组」群。' },
-  { id: 'log-003', taskId: 'st-001', runAt: '2026-03-31 08:00:05', status: 'success', duration: '5.1s', output: '财务晨报已生成：昨日销售额 ¥1,212,000，环比+1.3%，毛利率 43.1%。已推送至飞书「财务组」群。' },
+  { id: 'log-001', taskId: 'st-001', runAt: '2026-04-02 08:00:03', status: 'success', duration: '4.2s', output: '财务晨报已生成：昨日销售额 ¥1,248,000，环比+5.2%，毛利率 42.3%。已推送至「财务组」工作群。' },
+  { id: 'log-002', taskId: 'st-001', runAt: '2026-04-01 08:00:02', status: 'success', duration: '3.8s', output: '财务晨报已生成：昨日销售额 ¥1,186,000，环比-2.1%，毛利率 41.8%。已推送至「财务组」工作群。' },
+  { id: 'log-003', taskId: 'st-001', runAt: '2026-03-31 08:00:05', status: 'success', duration: '5.1s', output: '财务晨报已生成：昨日销售额 ¥1,212,000，环比+1.3%，毛利率 43.1%。已推送至「财务组」工作群。' },
 ];
 
 // ─── 触发类型配置 ──────────────────────────────────────────
 
 const TRIGGER_CONFIG: Record<TriggerType, { label: string; icon: React.ReactNode; color: string; desc: string }> = {
   scheduled: { label: '定时触发', icon: <ClockCircleOutlined />, color: '#6366F1', desc: '按设定规则定时执行' },
-  event:     { label: '事件触发', icon: <ThunderboltOutlined />, color: '#F59E0B', desc: 'GitHub PR、文件变更等外部事件' },
+  event:     { label: '事件触发', icon: <ThunderboltOutlined />, color: '#F59E0B', desc: '代码提交、文件变更等外部事件' },
 };
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: 'success' | 'processing' | 'default' | 'error' }> = {

@@ -47,7 +47,7 @@ const MOCK_TASKS: Record<string, TaskItem[]> = {
         { id: 's1', name: '文档解析', status: 'done', desc: '调用 PDF 解析引擎提取全文结构', time: '10:32:01', output: '共提取 47 页，12,340 字，识别到 23 个条款段落' },
         { id: 's2', name: '合规规则匹配', status: 'done', desc: '逐条检索合规知识库规则', time: '10:32:08', output: '命中规则库 312 条，完成条款交叉映射' },
         { id: 's3', name: '风险识别', status: 'done', desc: 'AI 分析高风险语义模式，标注异常条款', time: '10:32:18', output: '识别出 3 处高风险：违约责任上限条款、单方解约权条款、数据归属模糊条款' },
-        { id: 's4', name: '报告生成', status: 'done', desc: '生成结构化审查报告并写入飞书文档', time: '10:34:15', output: '审查报告已生成，含风险等级标注与修改建议，已推送给法务负责人' },
+        { id: 's4', name: '报告生成', status: 'done', desc: '生成结构化审查报告并写入在线文档', time: '10:34:15', output: '审查报告已生成，含风险等级标注与修改建议，已推送给法务负责人' },
       ],
     },
     {
@@ -325,7 +325,7 @@ const DigitalEmployeeH5: React.FC<DigitalEmployeeH5Props> = ({ employeeId }) => 
               setTimeout(() => {
                 pushMsg({
                   id: nextId(), role: 'bot', kind: 'normal', time: getTime(), empId, empName,
-                  text: `✅ **合同审核完成**\n\n**文件**：供应商合同_2026Q2.pdf（18页，31条款）\n\n**审核结论**：\n• 高风险条款 2 项 ⚠️（已由您逐一确认）\n• 中风险条款 5 项（建议法务复查）\n• 低风险条款 8 项（可接受）\n\n**已确认处理方式**：\n• 第8条违约责任：${confirmText}\n• 第12条单方解约权：${confirmText2}\n\n审核报告已生成，包含风险标注、修改建议与法律依据引用，可直接导出或同步至飞书文档。`,
+                  text: `✅ **合同审核完成**\n\n**文件**：供应商合同_2026Q2.pdf（18页，31条款）\n\n**审核结论**：\n• 高风险条款 2 项 ⚠️（已由您逐一确认）\n• 中风险条款 5 项（建议法务复查）\n• 低风险条款 8 项（可接受）\n\n**已确认处理方式**：\n• 第8条违约责任：${confirmText}\n• 第12条单方解约权：${confirmText2}\n\n审核报告已生成，包含风险标注、修改建议与法律依据引用，可直接导出或同步至在线文档。`,
                 });
                 setSending(false);
               }, 1800);

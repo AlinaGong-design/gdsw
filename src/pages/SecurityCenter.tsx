@@ -74,10 +74,10 @@ const MOCK_WORDS: SensitiveWordGroup[] = [
 const MOCK_SESSIONS: SessionLog[] = [
   { id: 's-001', employeeName: '合同审核助手', userId: 'usr_zhangsan', dept: '法务部', startAt: '2026-04-22 09:38', duration: '12m 34s', msgCount: 18, tokens: 14280, status: 'flagged', channel: 'H5网页' },
   { id: 's-002', employeeName: '法务合规助手', userId: 'usr_lisi', dept: '法务部', startAt: '2026-04-22 09:20', duration: '8m 02s', msgCount: 11, tokens: 9640, status: 'blocked', channel: 'API' },
-  { id: 's-003', employeeName: 'HR 招聘助手', userId: 'usr_wangwu', dept: '人力资源', startAt: '2026-04-22 09:05', duration: '5m 18s', msgCount: 7, tokens: 5120, status: 'normal', channel: '飞书' },
+  { id: 's-003', employeeName: 'HR 招聘助手', userId: 'usr_wangwu', dept: '人力资源', startAt: '2026-04-22 09:05', duration: '5m 18s', msgCount: 7, tokens: 5120, status: 'normal', channel: 'elink' },
   { id: 's-004', employeeName: '智能客服分发', userId: 'usr_zhaoliu', dept: '客户成功', startAt: '2026-04-22 08:55', duration: '3m 44s', msgCount: 5, tokens: 3280, status: 'normal', channel: 'H5网页' },
   { id: 's-005', employeeName: '运营数据助手', userId: 'usr_sunqi', dept: '运营部', startAt: '2026-04-22 08:40', duration: '18m 22s', msgCount: 24, tokens: 22400, status: 'normal', channel: 'API' },
-  { id: 's-006', employeeName: '智能巡检助手', userId: 'usr_zhouba', dept: '管道运营部', startAt: '2026-04-22 08:20', duration: '25m 11s', msgCount: 32, tokens: 28600, status: 'normal', channel: '飞书' },
+  { id: 's-006', employeeName: '智能巡检助手', userId: 'usr_zhouba', dept: '管道运营部', startAt: '2026-04-22 08:20', duration: '25m 11s', msgCount: 32, tokens: 28600, status: 'normal', channel: 'elink' },
 ];
 const MOCK_TOOL_CALLS: ToolCallLog[] = [
   { id: 'tc-001', employeeName: '合同审核助手', tool: 'pdf_parser', calledAt: '09:42:18', latencyMs: 1240, status: 'success', params: '{"file_url":"oss://contracts/hw-2026.pdf"}', result: '{"pages":18,"clauses":42}', taskId: 't-902' },

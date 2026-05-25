@@ -42,21 +42,21 @@ const initialEmployees: EmployeeRecord[] = [
   },
   {
     id: 'de-004', name: '代码审查助手', dept: '技术部', domain: '技术域',
-    description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 GitLab/GitHub',
+    description: 'PR 触发自动代码审查，安全漏洞扫描，输出审查建议并评论到 代码仓库',
     status: 'paused', version: 'v1.1.0', scope: 'dept',
     updateTime: '2026-02-28', callCount: 1654, score: 4.5, heat: 62, type: '升级款',
     ratingCount: 124, ratingSum: 558.0, recentCalls: [22, 18, 25, 30, 28, 15, 10],
   },
   {
     id: 'de-006', name: '运营数据助手', dept: '运营部', domain: '运营域',
-    description: '自动汇总运营核心指标，生成日/周/月报告，支持钉钉/飞书推送',
+    description: '自动汇总运营核心指标，生成日/周/月报告，支持消息渠道推送',
     status: 'published', version: 'v1.2.0', scope: 'company',
     updateTime: '2026-03-12', callCount: 1243, score: 4.3, heat: 55, type: '定制款',
     ratingCount: 76, ratingSum: 326.8, recentCalls: [18, 22, 16, 28, 24, 14, 10],
   },
   {
     id: 'de-002', name: 'HR 招聘助手', dept: '人力资源', domain: '人力域',
-    description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入飞书日历',
+    description: '简历智能筛选、面试时间协调、薪酬 benchmark 参考，接入系统日历',
     status: 'published', version: 'v1.3.2', scope: 'dept',
     updateTime: '2026-03-05', callCount: 3256, score: 4.6, heat: 78, type: '定制款',
     ratingCount: 198, ratingSum: 910.8, recentCalls: [48, 52, 45, 68, 61, 40, 28],
@@ -74,6 +74,13 @@ const initialEmployees: EmployeeRecord[] = [
     status: 'draft', version: 'v0.1.0', scope: 'private',
     updateTime: '2026-03-15', callCount: 8923, score: 4.7, heat: 91, type: '通用款',
     ratingCount: 0, ratingSum: 0, recentCalls: [0, 0, 0, 0, 0, 0, 0],
+  },
+  {
+    id: 'de-012', name: '作业方案助手', dept: '生产运营部', domain: '能源工程域',
+    description: '上传背景材料或设计方案，AI 自动识别作业类型并匹配方案模板，引导用户在线填写作业方案，支持文字与图片内容补充',
+    status: 'published', version: 'v1.0.0', scope: 'company',
+    updateTime: '2026-05-10', callCount: 632, score: 4.7, heat: 82, type: '定制款',
+    ratingCount: 54, ratingSum: 253.8, recentCalls: [12, 18, 15, 22, 20, 16, 14],
   },
   {
     id: 'de-009', name: '合同审核助手', dept: '法务部', domain: '法务域',
