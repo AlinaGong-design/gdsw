@@ -875,7 +875,7 @@ interface ChatMessage {
   time: string;
   empId?: string;
   empName?: string;
-  kind?: 'normal' | 'step' | 'tool-call' | 'human-pending' | 'op-template-select';
+  kind?: 'normal' | 'step' | 'tool-call' | 'human-pending' | 'op-template-select' | 'op-human-confirm';
   toolCard?: ToolCard;
 }
 
@@ -1060,6 +1060,90 @@ export const DigitalEmployeePanel: React.FC = () => {
   // ── WPS 作业方案编辑器 ──
   const [showOpPlanEditor, setShowOpPlanEditor] = React.useState(false);
   const [opPlanTemplate, setOpPlanTemplate] = React.useState('');
+  // HSE 审批流状态
+  const [opPlanFlow, setOpPlanFlow] = React.useState<
+    'idle' | 'validating' | 'confirming' | 'hse_review' | 'approved' | 'rejected'
+  >('idle');
+  const [opPlanRejection, setOpPlanRejection] = React.useState<string>('');
+
+  // ── HSE 审批流处理 ──
+  const handleOpPlanSubmit = React.useCallback(() => {
+    const convId = activeConvId;
+    if (!convId) return;
+    let msgSeq = Date.now();
+    const nextId = () => `op-${++msgSeq}`;
+    const ts = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const empId = 'de-op';
+    const empName = '作业方案助手';
+
+    const pushMsg = (msg: ChatMessage) => {
+      setConversations(prev => prev.map(c => c.id === convId ? {
+        ...c, messages: [...c.messages, msg],
+        lastTime: msg.time, lastText: msg.text.slice(0, 20),
+      } : c));
+    };
+
+    setOpPlanFlow('validating');
+    setShowOpPlanEditor(false);
+
+    // Step 1: 系统校验中
+    setTimeout(() => {
+      pushMsg({ id: nextId(), role: 'bot', kind: 'step', text: '◉ 作业方案已提交，系统正在自动校验内容完整性与合规性…', time: ts, empId, empName });
+    }, 400);
+
+    // Step 2: 校验完成 → 推人工确认卡片，流程在此暂停等待用户操作
+    setTimeout(() => {
+      pushMsg({ id: nextId(), role: 'bot', kind: 'normal', time: ts, empId, empName,
+        text: '✅ **系统自动校验通过**\n\n检验结果：\n- 所有必填项已完成\n- 格式与规范符合要求\n- 安全措施说明完整' });
+      setOpPlanFlow('confirming');
+      pushMsg({ id: `op-confirm-card-${msgSeq}`, role: 'bot', kind: 'op-human-confirm', time: ts, empId, empName,
+        text: '请人工确认以下信息无误后，提交 HSE 审批' });
+    }, 2000);
+  }, [activeConvId, setConversations]);
+
+  // ── 人工确认后继续 HSE 审批流 ──
+  const handleOpPlanConfirm = React.useCallback(() => {
+    const convId = activeConvId;
+    if (!convId) return;
+    let msgSeq = Date.now();
+    const nextId = () => `op-${++msgSeq}`;
+    const ts = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const empId = 'de-op';
+    const empName = '作业方案助手';
+
+    const pushMsg = (msg: ChatMessage) => {
+      setConversations(prev => prev.map(c => c.id === convId ? {
+        ...c, messages: [...c.messages, msg],
+        lastTime: msg.time, lastText: msg.text.slice(0, 20),
+      } : c));
+    };
+
+    // Step 3: 人工确认完成，提交 HSE
+    setOpPlanFlow('hse_review');
+    pushMsg({ id: nextId(), role: 'bot', kind: 'step', text: '◉ 人工确认完成，正在提交 HSE 审批流程…', time: ts, empId, empName });
+
+    // Step 4: HSE 审批中
+    setTimeout(() => {
+      pushMsg({ id: nextId(), role: 'bot', kind: 'normal', time: ts, empId, empName,
+        text: '📋 **已进入 HSE 审批流程**\n\n审批人：HSE 安全管理部门\n预计反馈：工作日 1-2 天\n\n审批结果将在此处通知您。' });
+    }, 1000);
+
+    // Step 5: 模拟 HSE 审批结果（示例：审批未通过）
+    setTimeout(() => {
+      const rejected = true; // 演示用，实际由后端决定
+      if (rejected) {
+        const rejectionText = '1. 作业现场平面图标注不清晰，须注明带电区域隔离距离（≥3m）；\n2. 安全防护措施说明未列出绝缘手套型号及检验日期；\n3. 作业成员名单缺少证书编号，须补充特种作业证编号；\n4. 施工工序流程图缺少停电验电环节，建议在「停电倒闸操作」步骤后增加「验电接地确认」子步骤。';
+        setOpPlanRejection(rejectionText);
+        setOpPlanFlow('rejected');
+        pushMsg({ id: nextId(), role: 'bot', kind: 'normal', time: ts, empId, empName,
+          text: `❌ **HSE 审批未通过**\n\n驳回原因如下：\n\n${rejectionText.split('\n').map(l => `> ${l}`).join('\n')}\n\n请点击下方「打开作业方案」，根据审批建议修改后重新提交。` });
+      } else {
+        setOpPlanFlow('approved');
+        pushMsg({ id: nextId(), role: 'bot', kind: 'normal', time: ts, empId, empName,
+          text: '✅ **HSE 审批通过**\n\n作业方案已获批准，可按方案执行作业。请妥善保存审批文件。' });
+      }
+    }, 4500);
+  }, [activeConvId, setConversations]);
   const [rightPanelCollapsed, setRightPanelCollapsed] = React.useState(false);
   const [rightPanelWidth, setRightPanelWidth] = React.useState(290);
 
@@ -2255,6 +2339,8 @@ export const DigitalEmployeePanel: React.FC = () => {
         <OperationPlanEditor
           templateName={opPlanTemplate}
           onBack={() => setShowOpPlanEditor(false)}
+          onSubmit={handleOpPlanSubmit}
+          rejectionData={opPlanFlow === 'rejected' ? opPlanRejection : ''}
         />
       )}
     <div style={{ width: '100%', display: 'flex', gap: 0, height: '100%', alignSelf: 'stretch', flex: 1, minHeight: 0 }}>
@@ -2651,6 +2737,75 @@ export const DigitalEmployeePanel: React.FC = () => {
 
                 // ── normal（包括已确认后的 human-pending）：标准气泡 ──
 
+                // ── op-human-confirm：人工确认卡片 ──
+                if (msg.kind === 'op-human-confirm') {
+                  const isDone = opPlanFlow !== 'confirming';
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', animation: 'fadeSlideIn 0.2s ease' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 8, background: empAvatar, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{empChar}</div>
+                      <div style={{ maxWidth: '86%', border: `1.5px solid ${isDone ? '#d1fae5' : '#fde68a'}`, borderRadius: 12, overflow: 'hidden', background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.07)' }}>
+                        {/* 卡头 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: isDone ? '#f0fdf4' : '#fffbeb', borderBottom: `1px solid ${isDone ? '#bbf7d0' : '#fde68a'}` }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, background: isDone ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#d97706,#f59e0b)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>
+                            {isDone ? '✓' : '⏸'}
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isDone ? '#065f46' : '#92400e' }}>
+                            {isDone ? '已完成人工确认' : '等待人工确认'}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#9ca3af' }}>· Human-in-the-loop</span>
+                        </div>
+                        {/* 确认要点 */}
+                        <div style={{ padding: '12px 14px 10px', fontSize: 12, color: '#374151', lineHeight: 1.9 }}>
+                          <div style={{ fontWeight: 600, color: '#4b5563', marginBottom: 6, fontSize: 12 }}>请确认以下校验项均符合要求：</div>
+                          {[
+                            '作业方案名称、编号、编制单位填写完整',
+                            '作业负责人及成员名单含有效证书编号',
+                            '安全防护措施包含绝缘手套型号及检验日期',
+                            '现场平面图标注带电区域隔离距离（≥3m）',
+                            '施工工序流程图含验电接地确认步骤',
+                          ].map((item, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 3 }}>
+                              <span style={{ fontSize: 13, color: isDone ? '#10b981' : '#d97706', flexShrink: 0, marginTop: 1 }}>{isDone ? '✓' : '○'}</span>
+                              <span style={{ color: isDone ? '#6b7280' : '#374151', textDecoration: isDone ? 'line-through' : 'none' }}>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* 操作按钮 */}
+                        {!isDone && (
+                          <div style={{ padding: '0 14px 14px', display: 'flex', gap: 8 }}>
+                            <button
+                              onClick={handleOpPlanConfirm}
+                              style={{
+                                flex: 1, padding: '9px 0', borderRadius: 8, border: 'none',
+                                background: 'linear-gradient(135deg, #059669, #10b981)',
+                                color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(16,185,129,0.35)', transition: 'all 0.15s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(16,185,129,0.5)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 8px rgba(16,185,129,0.35)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                            >
+                              确认无误，提交 HSE 审批
+                            </button>
+                            <button
+                              onClick={() => setShowOpPlanEditor(true)}
+                              style={{
+                                padding: '9px 16px', borderRadius: 8, border: '1px solid #e5e7eb',
+                                background: '#fff', color: '#6b7280', fontSize: 12, fontWeight: 500,
+                                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                              }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#a5b4fc'; (e.currentTarget as HTMLButtonElement).style.color = '#6366F1'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e5e7eb'; (e.currentTarget as HTMLButtonElement).style.color = '#6b7280'; }}
+                            >
+                              返回修改
+                            </button>
+                          </div>
+                        )}
+                        <div style={{ fontSize: 10, color: '#ccc', padding: '0 14px 8px' }}>{msg.time}</div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 // ── op-template-select：方案模板选择卡片 ──
                 if (msg.kind === 'op-template-select') {
                   const templates = [
@@ -2678,7 +2833,7 @@ export const DigitalEmployeePanel: React.FC = () => {
                                 <span style={{ fontSize: 11, color: '#9ca3af' }}>待填项：{tpl.fills} 项</span>
                               </div>
                               <button
-                                onClick={() => { setOpPlanTemplate(tpl.name); setShowOpPlanEditor(true); }}
+                                onClick={() => { setOpPlanTemplate(tpl.name); setOpPlanFlow('idle'); setOpPlanRejection(''); setShowOpPlanEditor(true); }}
                                 style={{ flexShrink: 0, padding: '6px 14px', background: '#6366F1', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' }}
                               >
                                 进入方案编辑
@@ -2718,6 +2873,27 @@ export const DigitalEmployeePanel: React.FC = () => {
                       <div className="ai-typing-dot" /><div className="ai-typing-dot" /><div className="ai-typing-dot" />
                     </div>
                   </div>
+                </div>
+              )}
+              {/* ── 驳回后「打开作业方案」操作按钮 ── */}
+              {opPlanFlow === 'rejected' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start', paddingLeft: 36, paddingTop: 4 }}>
+                  <button
+                    onClick={() => setShowOpPlanEditor(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '9px 20px', borderRadius: 10, border: 'none',
+                      background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+                      color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      boxShadow: '0 2px 10px rgba(220,38,38,0.35)',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(220,38,38,0.5)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 10px rgba(220,38,38,0.35)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; }}
+                  >
+                    <span style={{ fontSize: 15 }}>📋</span>
+                    打开作业方案（根据审批建议修改）
+                  </button>
                 </div>
               )}
               <div ref={chatEndRef} />

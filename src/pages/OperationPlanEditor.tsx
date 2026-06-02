@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 interface FillField {
   id: string;
@@ -23,6 +23,36 @@ const FILL_FIELDS: FillField[] = [
   { id: 'f13', label: '施工工序流程图', chapter: '第五章 施工工序', type: 'image' },
 ];
 
+// AI 优化建议数据
+const AI_SUGGESTIONS: Record<string, string> = {
+  f01: '建议命名格式：「[单位简称]-[年度]-[变电站名]-年度检修作业方案」，例如：国网冀北-2025-220kV石景山变-年度检修作业方案',
+  f02: '编号格式建议：ZY-YYYY-MMDD-XXX（作业类型-年-月日-序号），例如：ZY-2025-0608-001',
+  f03: '填写运维单位全称，如：国家电网有限公司冀北电力有限公司北京检修公司',
+  f04: '填写本作业方案编制完成日期，格式：YYYY年MM月DD日',
+  f05: '建议从以下角度描述：①消除设备隐患 ②提升设备健康水平 ③保障电网可靠供电 ④满足预防性试验周期要求',
+  f06: '建议明确：①设备范围（主变/断路器/保护装置等）②电压等级③区域/站场名称④具体工作内容',
+  f07: '填写负责人姓名及工号，确认其持有有效高压电工特种作业证',
+  f08: '按角色分列：作业负责人×1、安全监护人×1、检修人员×N、试验人员×N，并注明各自证书编号',
+  f10: '必须包含：①验电接地措施 ②隔离范围设置 ③个人防护装备（绝缘手套/绝缘靴/护目镜）④与带电设备安全距离（≥3m）',
+  f12: '应包含：额定电压、额定电流、额定容量、短路阻抗、冷却方式、出厂日期、出厂编号等铭牌参数',
+};
+
+// HSE 驳回建议映射到字段（关键词匹配）
+const REJECTION_FIELD_HINTS: Record<string, string[]> = {
+  f09: ['平面图', '现场平面', '隔离距离'],
+  f10: ['防护措施', '绝缘手套', '安全防护'],
+  f08: ['成员名单', '证书编号', '特种作业证'],
+  f13: ['流程图', '工序流程', '验电接地'],
+};
+
+// AI 解读建议
+const AI_INTERPRET_HINTS: Record<string, string> = {
+  f09: '现场平面图需标注：①带电区域红色虚线边界 ②接地线位置 ③安全隔离距离（≥3m）④警示标志位置。建议使用CAD或专业绘图软件重新绘制并标注。',
+  f10: '安全防护措施须逐条列出，建议格式：\n①验电接地：在XX开关出线侧验电，装设三相短路接地线\n②隔离措施：拉开隔离开关，悬挂"禁止合闸"标示牌\n③个人防护：绝缘手套（型号：YS101-01-02，检验日期：XXXX-XX）、绝缘靴、护目镜\n④安全距离：与220kV带电设备保持≥3m安全距离',
+  f08: '作业成员名单建议格式：\n姓名/工号/��色/证书类型/证书编号\n例：张三/12345/作业负责人/高压电工特种作业操作证/豫（安监）特操证字[XXXX]第XXXXXX号',
+  f13: '施工工序流程图需增加「停电验电」环节，建议顺序：\n办理工作票→停电倒闸→验电接地→挂安全标示牌→开始检修→完工检查→拆除接地线→恢复送电→工作票终结',
+};
+
 const OUTLINE_CHAPTERS = [
   '封面信息', '第一章 作业概述', '第二章 作业人员及分工',
   '第三章 安全措施', '第四章 设备信息', '第五章 施工工序',
@@ -41,18 +71,62 @@ const CHAPTER_ANCHOR_MAP: Record<string, string> = {
 interface Props {
   templateName: string;
   onBack: () => void;
+  onSubmit?: () => void;
+  rejectionData?: string;
 }
 
-const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
+const OperationPlanEditor: React.FC<Props> = ({ onBack, onSubmit, rejectionData }) => {
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [imageValues, setImageValues] = useState<Record<string, string>>({});
   const [outlineOpen, setOutlineOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, string>>({});
+  const [aiInterpretId, setAiInterpretId] = useState<string | null>(null);
+  const [aiInterprets, setAiInterprets] = useState<Record<string, string>>({});
   const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartW = useRef(300);
+
+  const isRejected = !!rejectionData;
+
+  // 解析驳回建议，判断哪些字段受影响
+  const rejectedFieldIds = React.useMemo(() => {
+    if (!rejectionData) return new Set<string>();
+    const affected = new Set<string>();
+    Object.entries(REJECTION_FIELD_HINTS).forEach(([fieldId, keywords]) => {
+      if (keywords.some(kw => rejectionData.includes(kw))) {
+        affected.add(fieldId);
+      }
+    });
+    return affected;
+  }, [rejectionData]);
+
+  const rejectionLines = rejectionData ? rejectionData.split('\n').filter(Boolean) : [];
+
+  // 驳回模式打开时，自动预加载所有受影响字段的 AI 优化建议
+  useEffect(() => {
+    if (!isRejected || rejectedFieldIds.size === 0) return;
+    const fieldIds = Array.from(rejectedFieldIds);
+    // 自动选中第一个受影响字段
+    setSelectedFieldId(fieldIds[0]);
+    fieldIds.forEach((fieldId, idx) => {
+      setTimeout(() => {
+        setAiInterprets(prev => ({
+          ...prev,
+          [fieldId]: AI_INTERPRET_HINTS[fieldId] || '建议根据 HSE 审批意见仔细核对该字段内容，确保满足安全规范要求后重新填写。',
+        }));
+      }, 600 + idx * 300);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRejected]);
 
   const completedCount = FILL_FIELDS.filter(f =>
     f.type === 'text' ? !!fieldValues[f.id] : !!imageValues[f.id]
   ).length;
+  const allCompleted = completedCount === FILL_FIELDS.length;
 
   const handleLocate = (fieldId: string) => {
     setSelectedFieldId(fieldId);
@@ -60,17 +134,70 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // 拖拽调整侧边栏宽度
+  const onDragStart = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartW.current = sidebarWidth;
+    e.preventDefault();
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = dragStartX.current - e.clientX;
+      const newW = Math.min(520, Math.max(200, dragStartW.current + delta));
+      setSidebarWidth(newW);
+    };
+    const onUp = () => { isDragging.current = false; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, []);
+
+  // AI 优化（支持多次点击重新生成）
+  const handleAiOptimize = (fieldId: string) => {
+    if (aiLoadingId === fieldId) return;
+    setAiLoadingId(fieldId);
+    setAiSuggestions(prev => { const n = { ...prev }; delete n[fieldId]; return n; });
+    setTimeout(() => {
+      setAiSuggestions(prev => ({ ...prev, [fieldId]: AI_SUGGESTIONS[fieldId] || '该字段暂无优化建议。' }));
+      setAiLoadingId(null);
+    }, 1200);
+  };
+
+  const handleApplySuggestion = (fieldId: string) => {
+    const suggestion = aiSuggestions[fieldId];
+    if (!suggestion) return;
+    const match = suggestion.match(/[「『]([^」』]+)[」』]/);
+    const value = match ? match[1] : suggestion.split('，')[0].replace(/^建议[^：：]*[：：]/, '').trim();
+    setFieldValues(v => ({ ...v, [fieldId]: value }));
+    setAiSuggestions(prev => { const n = { ...prev }; delete n[fieldId]; return n; });
+  };
+
+  // AI 解读（驳回模式）
+  const handleAiInterpret = (fieldId: string) => {
+    if (aiInterpretId === fieldId) return;
+    setAiInterpretId(fieldId);
+    setAiInterprets(prev => { const n = { ...prev }; delete n[fieldId]; return n; });
+    setTimeout(() => {
+      setAiInterprets(prev => ({ ...prev, [fieldId]: AI_INTERPRET_HINTS[fieldId] || '建议根据 HSE 审批意见仔细核对该字段内容，确保满足安全规范要求后重新填写。' }));
+      setAiInterpretId(null);
+    }, 1000);
+  };
+
   const InlineField = ({ field }: { field: FillField }) => {
     const isSelected = selectedFieldId === field.id;
     const val = fieldValues[field.id];
+    const isRejectedField = rejectedFieldIds.has(field.id);
     return (
       <span
         ref={el => { fieldRefs.current[field.id] = el; }}
         onClick={() => setSelectedFieldId(field.id)}
         style={{
-          background: isSelected ? '#e0e7ff' : val ? 'transparent' : '#fef3c7',
-          color: val ? '#1a1a1a' : '#92400e',
-          border: isSelected ? '1.5px solid #6366F1' : val ? 'none' : '1px dashed #f59e0b',
+          background: isSelected ? '#e0e7ff' : isRejectedField && !val ? '#fee2e2' : val ? 'transparent' : '#fef3c7',
+          color: val ? '#1a1a1a' : isRejectedField ? '#991b1b' : '#92400e',
+          border: isSelected ? '1.5px solid #6366F1' : isRejectedField && !val ? '1px dashed #ef4444' : val ? 'none' : '1px dashed #f59e0b',
           borderRadius: 3,
           padding: '1px 5px',
           cursor: 'pointer',
@@ -88,15 +215,16 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
   const ImageField = ({ field }: { field: FillField }) => {
     const isSelected = selectedFieldId === field.id;
     const img = imageValues[field.id];
+    const isRejectedField = rejectedFieldIds.has(field.id);
     return (
       <div
         ref={el => { fieldRefs.current[field.id] = el; }}
         onClick={() => setSelectedFieldId(field.id)}
         style={{
           margin: '8px 0',
-          border: `2px dashed ${isSelected ? '#6366F1' : img ? '#10b981' : '#f59e0b'}`,
+          border: `2px dashed ${isSelected ? '#6366F1' : img ? '#10b981' : isRejectedField ? '#ef4444' : '#f59e0b'}`,
           borderRadius: 6,
-          background: isSelected ? '#f0f0ff' : img ? '#f0fdf4' : '#fffbeb',
+          background: isSelected ? '#f0f0ff' : img ? '#f0fdf4' : isRejectedField ? '#fff1f2' : '#fffbeb',
           padding: 16,
           textAlign: 'center',
           cursor: 'pointer',
@@ -113,8 +241,8 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
           <img src={img} alt={field.label} style={{ maxHeight: 150, maxWidth: '100%', objectFit: 'contain' }} />
         ) : (
           <>
-            <span style={{ fontSize: 28 }}>🖼️</span>
-            <span style={{ fontSize: 12, color: '#92400e', fontWeight: 600 }}>【待填写】{field.label}</span>
+            <span style={{ fontSize: 28 }}>{isRejectedField ? '⚠️' : '🖼️'}</span>
+            <span style={{ fontSize: 12, color: isRejectedField ? '#991b1b' : '#92400e', fontWeight: 600 }}>【待填写】{field.label}</span>
             <span style={{ fontSize: 11, color: '#aaa' }}>点击右侧面板上传图片</span>
           </>
         )}
@@ -146,9 +274,28 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
         </button>
         <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>
           220kV变电站年度检修作业方案_待填充.docx
+          {isRejected && <span style={{ marginLeft: 8, fontSize: 11, background: '#fee2e2', color: '#dc2626', padding: '1px 8px', borderRadius: 10, fontWeight: 500 }}>HSE 审批驳回</span>}
         </span>
+        {/* 提交按钮：仅在全部完成且未驳回时显示 */}
+        {allCompleted && !isRejected && onSubmit && (
+          <button
+            onClick={onSubmit}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(5,150,105,0.25)' }}
+          >
+            ✓ 提交审批
+          </button>
+        )}
+        {/* 驳回模式：重新提交按钮 */}
+        {isRejected && allCompleted && onSubmit && (
+          <button
+            onClick={onSubmit}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >
+            ↺ 修改后重新提交
+          </button>
+        )}
         <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#6366F1', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-          📄 导出修订版（.docx）
+          📄 导出
         </button>
       </div>
 
@@ -159,9 +306,11 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
           <button key={tab} style={{ fontSize: 12, padding: '0 10px', height: 26, border: 'none', background: i === 0 ? '#f0f0ff' : 'none', color: i === 0 ? '#6366F1' : '#4b5563', borderRadius: 5, cursor: 'pointer', fontWeight: i === 0 ? 600 : 400 }}>{tab}</button>
         ))}
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: '#9ca3af', marginRight: 8 }}>已填 {completedCount}/{FILL_FIELDS.length} 项</span>
+        <span style={{ fontSize: 11, color: allCompleted ? '#059669' : '#9ca3af', marginRight: 8, fontWeight: allCompleted ? 600 : 400 }}>
+          {allCompleted ? '✓ 全部填写完成' : `已填 ${completedCount}/${FILL_FIELDS.length} 项`}
+        </span>
         <div style={{ width: 80, height: 6, background: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
-          <div style={{ width: `${(completedCount / FILL_FIELDS.length) * 100}%`, height: '100%', background: '#6366F1', borderRadius: 3, transition: 'width 0.3s' }} />
+          <div style={{ width: `${(completedCount / FILL_FIELDS.length) * 100}%`, height: '100%', background: allCompleted ? '#059669' : '#6366F1', borderRadius: 3, transition: 'width 0.3s' }} />
         </div>
       </div>
 
@@ -174,10 +323,10 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
         </select>
         <div style={{ width: 1, height: 18, background: '#e5e7eb', margin: '0 3px' }} />
         {[
-          { label: 'B', style: { fontWeight: 700 } },
-          { label: 'I', style: { fontStyle: 'italic' } },
-          { label: 'U', style: { textDecoration: 'underline' } },
-          { label: 'ab', style: { fontSize: 10 } },
+          { label: 'B', style: { fontWeight: 700 } as React.CSSProperties },
+          { label: 'I', style: { fontStyle: 'italic' } as React.CSSProperties },
+          { label: 'U', style: { textDecoration: 'underline' } as React.CSSProperties },
+          { label: 'ab', style: { fontSize: 10 } as React.CSSProperties },
         ].map(({ label, style }, i) => (
           <button key={i} style={{ ...BAR_BTN, ...style }}>{label}</button>
         ))}
@@ -230,8 +379,6 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
               <div style={{ fontSize: 38, fontWeight: 900, color: '#6366F1', opacity: 0.05, transform: 'rotate(-30deg)', userSelect: 'none', letterSpacing: 6, whiteSpace: 'nowrap' }}>WPS WebOffice 万卷</div>
             </div>
             <div style={{ position: 'relative', zIndex: 1 }}>
-              {/* 页码 */}
-              <div style={{ position: 'absolute', top: -40, right: 0, fontSize: 11, color: '#bbb' }}>合同编号：SX2026-0511001</div>
 
               {/* 封面 */}
               <div style={{ textAlign: 'center', marginBottom: 48, paddingBottom: 32, borderBottom: '2px solid #e5e7eb' }}>
@@ -343,88 +490,134 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* 右侧待填清单 */}
-        <div style={{ width: 288, background: '#fff', borderLeft: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-          <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 3 }}>待填清单</div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 10 }}>点击条目可定位到文档对应位置</div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {[
-                { label: `全部 ${FILL_FIELDS.length}`, bg: '#f3f4f6', color: '#374151' },
-                { label: `待填 ${FILL_FIELDS.length - completedCount}`, bg: '#fef3c7', color: '#92400e' },
-                { label: `已填 ${completedCount}`, bg: '#d1fae5', color: '#065f46' },
-              ].map(({ label, bg, color }, i) => (
-                <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: bg, color, fontWeight: 500 }}>{label}</span>
-              ))}
-            </div>
-          </div>
+        {/* 拖拽分割线 */}
+        <div
+          onMouseDown={onDragStart}
+          style={{
+            width: 4, cursor: 'col-resize', background: 'transparent', flexShrink: 0,
+            borderLeft: '1px solid #f0f0f0', transition: 'background 0.15s',
+            zIndex: 10,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#c7d2fe')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          title="拖拽调整宽度"
+        />
 
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {Object.entries(fieldsByChapter).map(([chapter, fields]) => (
-              <div key={chapter}>
-                <div style={{ padding: '7px 14px 5px', fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f9fafb', borderBottom: '1px solid #f0f0f0', borderTop: '1px solid #f0f0f0' }}>
-                  {chapter}
+        {/* 右侧面板 */}
+        <div style={{ width: sidebarWidth, background: '#fff', display: 'flex', flexDirection: 'column', flexShrink: 0, minWidth: 200, maxWidth: 520 }}>
+
+          {/* ── 驳回模式：审批建议头部 ── */}
+          {isRejected ? (
+            <>
+              <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #f0f0f0', flexShrink: 0, background: '#fff1f2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626' }}>⚠ HSE 审批驳回建议</span>
                 </div>
-                {fields.map(field => {
+                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8 }}>请根据以下审批意见修改方案后重新提交</div>
+                <div style={{ background: '#fff', border: '1px solid #fca5a5', borderRadius: 6, padding: '8px 10px' }}>
+                  {rejectionLines.map((line, i) => (
+                    <div key={i} style={{ fontSize: 11, color: '#7f1d1d', lineHeight: 1.8, display: 'flex', gap: 4 }}>
+                      <span style={{ flexShrink: 0, color: '#dc2626' }}>›</span>
+                      <span>{line}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 驳回模式：受影响字段列表 */}
+              <div style={{ padding: '8px 14px 6px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', flexShrink: 0 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280' }}>需修改的字段</span>
+                <span style={{ fontSize: 11, color: '#dc2626', marginLeft: 6 }}>{rejectedFieldIds.size} 项</span>
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {FILL_FIELDS.filter(field => rejectedFieldIds.has(field.id)).map(field => {
                   const isSelected = selectedFieldId === field.id;
                   const isDone = field.type === 'text' ? !!fieldValues[field.id] : !!imageValues[field.id];
+                  const hasInterpret = !!aiInterprets[field.id];
+                  const isInterpreting = aiInterpretId === field.id;
+
                   return (
-                    <div key={field.id} style={{ padding: '10px 14px', borderBottom: '1px solid #f5f5f5', background: isSelected ? '#f5f5ff' : '#fff', transition: 'background 0.15s' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: isDone ? '#d1fae5' : '#fef3c7', color: isDone ? '#065f46' : '#92400e', fontWeight: 600, flexShrink: 0 }}>
-                          {isDone ? '已填' : '待填'}
+                    <div
+                      key={field.id}
+                      style={{ borderBottom: '1px solid #f5f5f5', background: isSelected ? '#fff5f5' : '#fff', transition: 'background 0.15s' }}
+                    >
+                      <div
+                        onClick={() => handleLocate(field.id)}
+                        style={{ padding: '10px 14px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fffafa'; }}
+                        onMouseLeave={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fff'; }}
+                      >
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: isDone ? '#d1fae5' : '#fee2e2', color: isDone ? '#065f46' : '#dc2626', fontWeight: 600, flexShrink: 0 }}>
+                          {isDone ? '已改' : '待改'}
                         </span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1 }}>{field.label}</span>
-                        <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 5, background: field.type === 'image' ? '#e0e7ff' : '#f0fdf4', color: field.type === 'image' ? '#4338ca' : '#047857', flexShrink: 0 }}>
-                          {field.type === 'image' ? '图片' : '文字'}
-                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{field.label}</span>
+                        <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 5, background: '#fee2e2', color: '#dc2626', flexShrink: 0 }}>驳回</span>
                       </div>
 
-                      <button
-                        onClick={() => handleLocate(field.id)}
-                        style={{ fontSize: 11, padding: '3px 8px', border: '1px solid #e0deff', borderRadius: 5, background: '#fff', color: '#6366F1', cursor: 'pointer', marginBottom: isSelected ? 8 : 0 }}
-                      >
-                        📍 定位
-                      </button>
-
+                      {/* 展开编辑 + AI解读 */}
                       {isSelected && (
-                        <div style={{ marginTop: 2 }}>
+                        <div style={{ padding: '0 14px 12px' }}>
                           {field.type === 'text' ? (
-                            <textarea
-                              value={fieldValues[field.id] || ''}
-                              onChange={e => setFieldValues(v => ({ ...v, [field.id]: e.target.value }))}
-                              placeholder={`请输入${field.label}...`}
-                              rows={3}
-                              autoFocus
-                              style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid #6366F1', borderRadius: 5, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                            />
+                            <>
+                              <textarea
+                                value={fieldValues[field.id] || ''}
+                                onChange={e => setFieldValues(v => ({ ...v, [field.id]: e.target.value }))}
+                                placeholder={`请根据审批建议修改${field.label}...`}
+                                rows={3}
+                                autoFocus
+                                style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid #ef4444', borderRadius: 5, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                              />
+                            </>
                           ) : (
-                            <div>
-                              <label style={{ display: 'block', fontSize: 11, padding: '7px 10px', border: '1px dashed #6366F1', borderRadius: 5, color: '#6366F1', cursor: 'pointer', textAlign: 'center' }}>
-                                📎 点击上传图片
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  style={{ display: 'none' }}
-                                  onChange={e => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = ev => setImageValues(v => ({ ...v, [field.id]: ev.target?.result as string }));
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }}
-                                />
-                              </label>
-                              {imageValues[field.id] && (
-                                <div style={{ marginTop: 6, textAlign: 'center' }}>
-                                  <img src={imageValues[field.id]} alt="preview" style={{ maxWidth: '100%', maxHeight: 80, objectFit: 'contain', borderRadius: 4 }} />
-                                  <button
-                                    onClick={() => setImageValues(v => { const n = { ...v }; delete n[field.id]; return n; })}
-                                    style={{ display: 'block', margin: '4px auto 0', fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    删除图片
-                                  </button>
+                            <label style={{ display: 'block', fontSize: 11, padding: '7px 10px', border: '1px dashed #ef4444', borderRadius: 5, color: '#dc2626', cursor: 'pointer', textAlign: 'center' }}>
+                              📎 重新上传图片
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = ev => setImageValues(v => ({ ...v, [field.id]: ev.target?.result as string }));
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          )}
+
+                          {/* AI 解读按钮 */}
+                          {AI_INTERPRET_HINTS[field.id] && (
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                onClick={() => handleAiInterpret(field.id)}
+                                disabled={isInterpreting}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 5,
+                                  fontSize: 11, padding: '4px 10px', border: '1px solid #fca5a5',
+                                  borderRadius: 6, background: isInterpreting ? '#fff5f5' : '#fff1f2',
+                                  color: '#dc2626', cursor: isInterpreting ? 'not-allowed' : 'pointer',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {isInterpreting ? (
+                                  <>
+                                    <span style={{ display: 'inline-block', width: 10, height: 10, border: '1.5px solid #dc2626', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    AI 解读中...
+                                  </>
+                                ) : (
+                                  <>🔍 AI 解读{hasInterpret ? '（重新解读）' : ''}</>
+                                )}
+                              </button>
+
+                              {hasInterpret && (
+                                <div style={{ marginTop: 6, padding: '8px 10px', background: '#fff1f2', border: '1px solid #fca5a5', borderRadius: 7 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: '#dc2626', marginBottom: 5 }}>🔍 AI 解读建议</div>
+                                  <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                                    {aiInterprets[field.id]}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -434,11 +627,216 @@ const OperationPlanEditor: React.FC<Props> = ({ onBack }) => {
                     </div>
                   );
                 })}
+
+                {/* 其余未受影响字段 */}
+                <div style={{ padding: '8px 14px 6px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', borderTop: '1px solid #f0f0f0' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280' }}>其他填写项</span>
+                </div>
+                {FILL_FIELDS.filter(field => !rejectedFieldIds.has(field.id)).map(field => {
+                  const isSelected = selectedFieldId === field.id;
+                  const isDone = field.type === 'text' ? !!fieldValues[field.id] : !!imageValues[field.id];
+                  return (
+                    <div
+                      key={field.id}
+                      style={{ borderBottom: '1px solid #f5f5f5', background: isSelected ? '#f5f5ff' : '#fff' }}
+                    >
+                      <div
+                        onClick={() => handleLocate(field.id)}
+                        style={{ padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        onMouseEnter={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fafafe'; }}
+                        onMouseLeave={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fff'; }}
+                      >
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: isDone ? '#d1fae5' : '#fef3c7', color: isDone ? '#065f46' : '#92400e', fontWeight: 600, flexShrink: 0 }}>
+                          {isDone ? '已填' : '待填'}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#374151', flex: 1 }}>{field.label}</span>
+                      </div>
+                      {isSelected && (
+                        <div style={{ padding: '0 14px 10px' }}>
+                          {field.type === 'text' ? (
+                            <textarea
+                              value={fieldValues[field.id] || ''}
+                              onChange={e => setFieldValues(v => ({ ...v, [field.id]: e.target.value }))}
+                              placeholder={`请输入${field.label}...`}
+                              rows={2}
+                              autoFocus
+                              style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid #6366F1', borderRadius: 5, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                            />
+                          ) : (
+                            <label style={{ display: 'block', fontSize: 11, padding: '7px 10px', border: '1px dashed #6366F1', borderRadius: 5, color: '#6366F1', cursor: 'pointer', textAlign: 'center' }}>
+                              📎 点击上传图片
+                              <input type="file" accept="image/*" style={{ display: 'none' }}
+                                onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) { const reader = new FileReader(); reader.onload = ev => setImageValues(v => ({ ...v, [field.id]: ev.target?.result as string })); reader.readAsDataURL(file); }
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            /* ── 正常模式：待填清单 ── */
+            <>
+              <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 8 }}>待填清单</div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[
+                    { label: `全部 ${FILL_FIELDS.length}`, bg: '#f3f4f6', color: '#374151' },
+                    { label: `待填 ${FILL_FIELDS.length - completedCount}`, bg: '#fef3c7', color: '#92400e' },
+                    { label: `已填 ${completedCount}`, bg: '#d1fae5', color: '#065f46' },
+                  ].map(({ label, bg, color }, i) => (
+                    <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: bg, color, fontWeight: 500 }}>{label}</span>
+                  ))}
+                </div>
+                {/* 全部完成提示 */}
+                {allCompleted && (
+                  <div style={{ marginTop: 10, padding: '8px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6 }}>
+                    <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ 所有字段已填写完成</div>
+                    <div style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>请点击顶部「提交审批」按钮提交 HSE 审批</div>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {Object.entries(fieldsByChapter).map(([chapter, fields]) => (
+                  <div key={chapter}>
+                    <div style={{ padding: '7px 14px 5px', fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f9fafb', borderBottom: '1px solid #f0f0f0', borderTop: '1px solid #f0f0f0' }}>
+                      {chapter}
+                    </div>
+                    {fields.map(field => {
+                      const isSelected = selectedFieldId === field.id;
+                      const isDone = field.type === 'text' ? !!fieldValues[field.id] : !!imageValues[field.id];
+                      const hasAiSuggestion = !!aiSuggestions[field.id];
+                      const isAiLoading = aiLoadingId === field.id;
+
+                      return (
+                        <div
+                          key={field.id}
+                          style={{ borderBottom: '1px solid #f5f5f5', background: isSelected ? '#f5f5ff' : '#fff', transition: 'background 0.15s' }}
+                        >
+                          <div
+                            onClick={() => handleLocate(field.id)}
+                            style={{ padding: '10px 14px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                            onMouseEnter={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fafafe'; }}
+                            onMouseLeave={e => { if (!isSelected) (e.currentTarget.parentElement as HTMLElement).style.background = '#fff'; }}
+                          >
+                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: isDone ? '#d1fae5' : '#fef3c7', color: isDone ? '#065f46' : '#92400e', fontWeight: 600, flexShrink: 0 }}>
+                              {isDone ? '已填' : '待填'}
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{field.label}</span>
+                            <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 5, background: field.type === 'image' ? '#e0e7ff' : '#f0fdf4', color: field.type === 'image' ? '#4338ca' : '#047857', flexShrink: 0 }}>
+                              {field.type === 'image' ? '图片' : '文字'}
+                            </span>
+                          </div>
+
+                          {isSelected && (
+                            <div style={{ padding: '0 14px 12px' }}>
+                              {field.type === 'text' ? (
+                                <>
+                                  <textarea
+                                    value={fieldValues[field.id] || ''}
+                                    onChange={e => setFieldValues(v => ({ ...v, [field.id]: e.target.value }))}
+                                    placeholder={`请输入${field.label}...`}
+                                    rows={3}
+                                    autoFocus
+                                    style={{ width: '100%', fontSize: 12, padding: '6px 8px', border: '1px solid #6366F1', borderRadius: 5, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                                  />
+                                  {AI_SUGGESTIONS[field.id] && (
+                                    <div style={{ marginTop: 6 }}>
+                                      <button
+                                        onClick={() => handleAiOptimize(field.id)}
+                                        disabled={isAiLoading}
+                                        style={{
+                                          display: 'flex', alignItems: 'center', gap: 5,
+                                          fontSize: 11, padding: '4px 10px', border: '1px solid #c7d2fe',
+                                          borderRadius: 6, background: isAiLoading ? '#f5f3ff' : '#f0f4ff',
+                                          color: '#6366F1', cursor: isAiLoading ? 'not-allowed' : 'pointer',
+                                          fontWeight: 500, transition: 'all 0.15s',
+                                        }}
+                                      >
+                                        {isAiLoading ? (
+                                          <>
+                                            <span style={{ display: 'inline-block', width: 10, height: 10, border: '1.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                            AI 生成中...
+                                          </>
+                                        ) : (
+                                          <>✨ AI 优化{hasAiSuggestion ? '（重新生成）' : ''}</>
+                                        )}
+                                      </button>
+                                      {hasAiSuggestion && (
+                                        <div style={{ marginTop: 6, padding: '8px 10px', background: '#f0f4ff', border: '1px solid #c7d2fe', borderRadius: 7 }}>
+                                          <div style={{ fontSize: 11, fontWeight: 600, color: '#6366F1', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <span>✨</span> AI 优化建议
+                                          </div>
+                                          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.7, marginBottom: 8 }}>
+                                            {aiSuggestions[field.id]}
+                                          </div>
+                                          <div style={{ display: 'flex', gap: 6 }}>
+                                            <button
+                                              onClick={() => handleApplySuggestion(field.id)}
+                                              style={{ fontSize: 11, padding: '3px 10px', border: 'none', borderRadius: 5, background: '#6366F1', color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+                                            >采纳</button>
+                                            <button
+                                              onClick={() => setAiSuggestions(prev => { const n = { ...prev }; delete n[field.id]; return n; })}
+                                              style={{ fontSize: 11, padding: '3px 10px', border: '1px solid #e5e7eb', borderRadius: 5, background: '#fff', color: '#6b7280', cursor: 'pointer' }}
+                                            >忽略</button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div>
+                                  <label style={{ display: 'block', fontSize: 11, padding: '7px 10px', border: '1px dashed #6366F1', borderRadius: 5, color: '#6366F1', cursor: 'pointer', textAlign: 'center' }}>
+                                    📎 点击上传图片
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      style={{ display: 'none' }}
+                                      onChange={e => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          const reader = new FileReader();
+                                          reader.onload = ev => setImageValues(v => ({ ...v, [field.id]: ev.target?.result as string }));
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  {imageValues[field.id] && (
+                                    <div style={{ marginTop: 6, textAlign: 'center' }}>
+                                      <img src={imageValues[field.id]} alt="preview" style={{ maxWidth: '100%', maxHeight: 80, objectFit: 'contain', borderRadius: 4 }} />
+                                      <button
+                                        onClick={() => setImageValues(v => { const n = { ...v }; delete n[field.id]; return n; })}
+                                        style={{ display: 'block', margin: '4px auto 0', fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                                      >
+                                        删除图片
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

@@ -1149,6 +1149,12 @@ const EmployeeConfigPage: React.FC<{
     clarifyInput?: string;
     clarifyMode?: boolean;
     aiReply?: string;
+    // 作业方案专属字段
+    isOpPlan?: boolean;
+    humanStage?: 'wps' | 'confirm' | 'resubmit';   // 当前停在哪个人工节点
+    hseRejected?: boolean;                           // 是否处于驳回状态
+    rejectionRound?: number;                         // 驳回次数
+    rejectionAdvice?: string;                        // AI 整理的驳回优化建议
   }
   const [tasks, setTasks] = useState<DebugTask[]>([]);
   const [taskStepView, setTaskStepView] = useState<Record<number, 'json' | 'form'>>({});
@@ -1240,6 +1246,7 @@ const EmployeeConfigPage: React.FC<{
     const isTech    = /技术/.test(domain);
     const isCS      = /客服/.test(domain);
     const isPipe    = /管道|安全/.test(domain);
+    const isOpPlan  = isPipe && /作业方案|动火|清管|焊接|切割|通球|开孔|施工方案/.test(text);
 
     type LogKind = 'ok' | 'warn' | 'data' | 'info';
     interface DomainTaskConfig {
@@ -1385,6 +1392,43 @@ const EmployeeConfigPage: React.FC<{
       ],
       advanceLogs: ['✓ 意图识别完成：产品功能咨询', '✓ 知识库检索命中 3 条相关内容', '✓ 回复方案已生成，工单 #TK-001 已创建'],
       aiReply: `客户问题已处理：\n\n**问题类型**：产品功能咨询\n**解决方案**：已提供操作指引，附帮助文档链接\n\n**工单**：#TK-20240315-001（已解决，等待用户确认）\n满意度回访将在 24h 后自动触发。`,
+    } : isOpPlan ? {
+      planDesc: '解析设计文档，识别作业意图与介质类型，匹配最优方案模板',
+      execDesc: '调用 WPS 模板库，复制模板生成新文档，推送在线编辑链接',
+      planLogs: [
+        { text: '提取关键词：作业类型 / 输送介质 / 施工方式 / 作业地点', kind: 'data' },
+        { text: '意图识别完成，置信度 91%，命中关键词：动火 / 天然气 / 焊接', kind: 'ok' },
+        { text: '场景判定：天然气动火作业 → 匹配专属模板 TPL-HW-NG-001', kind: 'data' },
+        { text: '模板匹配完成，HSE 作业类别：A类动火', kind: 'ok' },
+      ],
+      execLogs: [
+        { text: '调用 WPS 模板库，复制 TPL-HW-NG-001 生成新方案文档...', kind: 'info' },
+        { text: '文档 DOC-OP-' + taskId.toString().slice(-4) + ' 已创建，共 8 个必填章节', kind: 'ok' },
+        { text: '黄色高亮字段已标注：动火点位置 / 动火时间 / 施工单位 / 监护人', kind: 'data' },
+        { text: 'WPS 在线编辑链接已生成，等待人工补充完善', kind: 'ok' },
+      ],
+      verifyLogs: [
+        { text: '方案结构完整性校验通过，8 个章节均已填写', kind: 'ok' },
+        { text: '危险源辨识与风险评估：完整 ✓', kind: 'ok' },
+        { text: '动火分析记录：检测值 < 爆炸下限 20%，合格 ✓', kind: 'ok' },
+        { text: '应急处置预案：联系人电话完整，撤离路线已标注 ✓', kind: 'ok' },
+      ],
+      steps: [
+        { name: '上传文档', desc: '接收用户上传的设计方案文件，提取文本内容' },
+        { name: '意图识别', desc: '识别作业类型、介质、施工方式，计算置信度' },
+        { name: '模板匹配', desc: '按介质精确匹配动火模板或清管模板' },
+        { name: '打开 WPS', desc: '复制模板生成新文档，推送在线编辑链接' },
+        { name: '人工补空', desc: '编制人在 WPS 中填写各必填字段与章节' },
+        { name: '系统校验', desc: '自动校验方案完整性与合规性' },
+        { name: '人工确认', desc: '确认校验结果，提交 HSE 审批' },
+        { name: 'HSE 审批', desc: '审批通过流程结束；驳回则返回优化补充' },
+      ],
+      advanceLogs: [
+        '✓ 文档解析完成，意图识别：天然气动火，置信度 91%',
+        '✓ 模板匹配完成：天然气动火方案模板（TPL-HW-NG-001）',
+        '✓ WPS 文档已创建，8 个必填字段已高亮标注，编辑链接已推送',
+      ] as [string, string, string],
+      aiReply: `作业方案编制流程已启动：\n\n**识别结果**\n• 作业类型：天然气管道动火作业\n• 匹配模板：天然气动火作业方案模板（TPL-HW-NG-001）\n• HSE 类别：A类动火\n\n**必填章节（8项）**\n1. 作业概况  2. 危险源辨识与风险评估  3. 安全技术措施\n4. 动火分析记录  5. 应急处置预案  6. 作业许可证\n7. 施工单位资质  8. 监护人确认\n\nWPS 在线编辑器已就绪，黄色标注字段为必填项。请补充完善后，点击「提交系统校验」。`,
     } : isPipe ? {
       planDesc: '接收多源告警信号，制定预警研判与巡检处置策略',
       execDesc: '整合光纤预警、机器视觉、无人机数据，执行异常综合研判',
@@ -1441,7 +1485,70 @@ const EmployeeConfigPage: React.FC<{
     };
 
     // 业务流程管道节点
-    const pipeStages: DebugPipeStage[] = [
+    const pipeStages: DebugPipeStage[] = isOpPlan ? [
+      {
+        id: 'upload', label: '上传设计方案', icon: '📄', desc: '用户上传设计文档或输入作业描述',
+        logs: [
+          { text: `[用户] 下达任务：「${text.slice(0, 30)}${text.length > 30 ? '…' : ''}」`, kind: 'info' },
+          { text: '接收设计文档，提取结构化文本内容', kind: 'ok' },
+          { text: `任务 ID: TASK-${taskId.toString().slice(-6)} 已创建`, kind: 'data' },
+        ],
+      },
+      {
+        id: 'intent', label: '意图识别', icon: '🧠', desc: '提取关键词，识别作业类型与介质',
+        logs: [
+          { text: '提取关键词：作业类型 / 输送介质 / 施工方式 / 作业地点', kind: 'data' },
+          { text: '意图识别完成，置信度 91%，命中：动火 / 天然气 / 焊接', kind: 'ok' },
+          { text: '场景判定：天然气动火 → 匹配 TPL-HW-NG-001', kind: 'data' },
+        ],
+      },
+      {
+        id: 'template', label: '确定模板', icon: '📋', desc: '按介质精确匹配作业方案模板',
+        logs: [
+          { text: '动火作业，介质：天然气 → 天然气动火方案模板', kind: 'data' },
+          { text: '模板 TPL-HW-NG-001 已锁定，HSE 类别：A类动火', kind: 'ok' },
+          { text: '必填章节：8项，关键字段：4个', kind: 'info' },
+        ],
+      },
+      {
+        id: 'wps', label: '打开 WPS 补空', icon: '✏️', type: 'human' as const, desc: '推送 WPS 在线编辑链接，人工填写必填字段',
+        logs: [
+          { text: '模板复制完成，文档 DOC-OP-' + taskId.toString().slice(-4) + ' 已生成', kind: 'ok' },
+          { text: '黄色高亮：动火点位置 / 动火时间 / 施工单位 / 监护人', kind: 'data' },
+          { text: '⚠️ 等待编制人在 WPS 中完成补空', kind: 'warn' },
+        ],
+      },
+      {
+        id: 'sys_verify', label: '系统校验', icon: '🔍', desc: '自动校验方案完整性与合规性',
+        logs: [
+          { text: '方案完整性校验：8 章节全部填写完成 ✓', kind: 'ok' },
+          { text: '动火分析：浓度 < 爆炸下限 20%，合格 ✓', kind: 'ok' },
+          { text: '应急预案：联系人电话完整，撤离路线已标注 ✓', kind: 'ok' },
+        ],
+      },
+      {
+        id: 'human_confirm', label: '人工确认', icon: '👤', type: 'human' as const, desc: '编制人确认校验结果，提交 HSE 审批',
+        logs: [
+          { text: '⚠️ 系统校验通过，等待人工最终确认', kind: 'warn' },
+          { text: '确认后将自动提交 HSE 审批系统', kind: 'info' },
+        ],
+      },
+      {
+        id: 'hse', label: 'HSE 系统审批', icon: '🏛️', desc: 'HSE 审批系统审核，通过则结束，驳回则返回优化',
+        logs: [
+          { text: '方案已提交至 HSE 审批系统，审批单号 APR-' + taskId.toString().slice(-6), kind: 'data' },
+          { text: 'HSE 类别：A类动火，预计审批周期 1 个工作日', kind: 'info' },
+          { text: '审批通过 → 流程办结；审批驳回 → 携带意见返回优化', kind: 'info' },
+        ],
+      },
+      {
+        id: 'close', label: '流程办结', icon: '✅', desc: '审批通过，方案归档，流程结束',
+        logs: [
+          { text: '审批通过，作业方案已具备开工条件', kind: 'ok' },
+          { text: '方案文档已归档，任务办结', kind: 'ok' },
+        ],
+      },
+    ] : [
       { id: 'recv', label: '接收任务', icon: '📥', desc: '员工接收用户指令，解析意图',
         logs: [
           { text: `[用户] 下达任务：「${text.slice(0, 30)}${text.length > 30 ? '…' : ''}」`, kind: 'info' },
@@ -1487,6 +1594,10 @@ const EmployeeConfigPage: React.FC<{
       logs: [{ text: `[${taskTime}] 任务已接收，开始处理...`, kind: 'info', ts: taskTime }],
       expanded: true,
       aiReply: taskConfig.aiReply,
+      isOpPlan,
+      humanStage: isOpPlan ? 'wps' : undefined,
+      hseRejected: false,
+      rejectionRound: 0,
     };
     setTasks(prev => [...prev, newTask]);
 
@@ -1516,32 +1627,167 @@ const EmployeeConfigPage: React.FC<{
     advance(900, 3, 2, taskConfig.advanceLogs[2], 'ok',
       [{ status: 'done' }, { status: 'done' }, { status: 'done' }, { status: 'running' }]);
 
-    // 到达人工复核节点：停住，等待用户操作
-    setTimeout(() => {
-      const ts = getTs();
-      setTasks(prev => prev.map(t => t.id !== taskId ? t : {
-        ...t,
-        status: 'human_pending',
-        doneCount: 4, // verify 完成，停在 human 节点
-        steps: t.steps.map(s => ({ ...s, status: 'done' as const, time: s.time || ts })),
-        logs: [...t.logs,
-          { text: '⚠️ 执行结果已就绪，等待人工复核确认', kind: 'warn', ts },
-          { text: '● 任务已暂停，请在左侧点击「确认通过」或发送澄清意见', kind: 'info', ts },
-        ],
-        humanOk: false,
-        clarifyMode: false,
-        clarifyInput: '',
-      }));
-      setChatLoading(false);
-    }, 1000);
+    if (isOpPlan) {
+      // 作业方案：推进到「打开 WPS 补空」节点（index=3）停住，等待人工填空
+      setTimeout(() => {
+        const ts = getTs();
+        setTasks(prev => prev.map(t => t.id !== taskId ? t : {
+          ...t,
+          status: 'human_pending',
+          doneCount: 3, // 前3个 auto 节点已完成，停在 wps（index=3）
+          steps: t.steps.map(s => ({ ...s, status: 'done' as const, time: s.time || ts })),
+          logs: [...t.logs,
+            { text: '📄 WPS 文档已就绪，黄色高亮字段为必填项', kind: 'data', ts },
+            { text: '⚠️ 等待编制人在 WPS 在线编辑器中完成方案补空', kind: 'warn', ts },
+            { text: '● 请在左侧任务卡片点击「已完成补空，提交校验」', kind: 'info', ts },
+          ],
+          humanOk: false,
+          clarifyMode: false,
+          clarifyInput: '',
+          humanStage: 'wps',
+        }));
+        setChatLoading(false);
+      }, 1100);
+    } else {
+      // 到达人工复核节点：停住，等待用户操作
+      setTimeout(() => {
+        const ts = getTs();
+        setTasks(prev => prev.map(t => t.id !== taskId ? t : {
+          ...t,
+          status: 'human_pending',
+          doneCount: 4, // verify 完成，停在 human 节点
+          steps: t.steps.map(s => ({ ...s, status: 'done' as const, time: s.time || ts })),
+          logs: [...t.logs,
+            { text: '⚠️ 执行结果已就绪，等待人工复核确认', kind: 'warn', ts },
+            { text: '● 任务已暂停，请在左侧点击「确认通过」或发送澄清意见', kind: 'info', ts },
+          ],
+          humanOk: false,
+          clarifyMode: false,
+          clarifyInput: '',
+        }));
+        setChatLoading(false);
+      }, 1000);
+    }
   };
 
   // 人工确认通过或澄清后继续执行
   const handleHumanApprove = (taskId: number, clarifyText?: string) => {
     const ts = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const getTs = () => new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
     setTasks(prev => prev.map(t => {
       if (t.id !== taskId) return t;
-      // 用任务预设的业务回复，若有澄清意见则追加
+
+      // ── isOpPlan 多阶段状态机 ──────────────────────────────────────────────
+      if (t.isOpPlan) {
+        if (t.humanStage === 'wps') {
+          // 用户完成 WPS 填空 → 触发系统校验 → 停在人工确认节点
+          setTimeout(() => {
+            const ts2 = getTs();
+            setTasks(prev2 => prev2.map(t2 => t2.id !== taskId ? t2 : {
+              ...t2,
+              status: 'human_pending' as const,
+              doneCount: 5, // sys_verify(4) 完成，停在 human_confirm(5)
+              logs: [...t2.logs,
+                { text: '🔍 系统自动校验中...', kind: 'info', ts: ts2 },
+                { text: '✅ 校验通过：必填字段完整，格式符合规范', kind: 'ok', ts: ts2 },
+                { text: '⚠️ 请确认方案内容后提交 HSE 审批', kind: 'warn', ts: ts2 },
+              ],
+              humanStage: 'confirm' as const,
+              humanOk: false,
+              clarifyMode: false,
+              clarifyInput: '',
+            }));
+          }, 1200);
+
+          setChatMsgs(prev => [...prev, {
+            role: 'ai',
+            content: '收到！正在对方案进行系统自动校验，请稍候...',
+          }]);
+          return {
+            ...t,
+            status: 'running' as const,
+            logs: [...t.logs,
+              { text: `✏️ 编制人已完成 WPS 方案补空`, kind: 'ok', ts },
+              { text: '🔄 启动系统自动校验流程...', kind: 'info', ts },
+            ],
+            humanOk: false,
+          };
+
+        } else if (t.humanStage === 'confirm' || t.humanStage === 'resubmit') {
+          const isResubmit = t.humanStage === 'resubmit';
+          const round = (t.rejectionRound ?? 0);
+
+          if (!isResubmit && round === 0) {
+            // 首次提交 HSE → 模拟驳回
+            const rejAdvice = `【HSE审批意见 - 第1次驳回】\n\n驳回原因：\n1. 第4节"应急预案"描述不够详细，缺少联系人电话\n2. 动火作业风险评估矩阵未填写责任人签字栏\n3. 施工区域隔离措施图示需补充实际距离标注\n\nAI优化建议：\n• 在"应急预案"章节补充现场负责人、安全员的手机号码\n• 在风险评估矩阵"责任人"一栏补充施工负责人姓名\n• 重新绘制隔离示意图，标注与居民区/设备的安全距离（≥10m）`;
+
+            // 追加驳回优化阶段到 pipeStages
+            const rejectionStages: DebugPipeStage[] = [
+              { id: 'rej_ai_opt', label: 'AI方案优化', icon: '🤖', type: 'auto' as const, desc: '数字员工分析驳回意见，生成优化建议', logs: [] },
+              { id: 'rej_verify', label: '二次校验', icon: '🔍', type: 'auto' as const, desc: '系统重新校验优化后方案', logs: [] },
+              { id: 'rej_confirm', label: '人工确认', icon: '👤', type: 'human' as const, desc: '编制人确认优化内容后重新提交', logs: [] },
+              { id: 'rej_hse2', label: 'HSE重新审批', icon: '🏛️', type: 'auto' as const, desc: 'HSE系统接收并重新审核', logs: [] },
+            ];
+
+            setTimeout(() => {
+              const ts3 = getTs();
+              setTasks(prev2 => prev2.map(t2 => t2.id !== taskId ? t2 : {
+                ...t2,
+                status: 'human_pending' as const,
+                pipeStages: [...t2.pipeStages, ...rejectionStages],
+                doneCount: 9, // 原8个阶段+ai_opt(8)+verify(9)完成，停在rej_confirm(10)
+                logs: [...t2.logs,
+                  { text: '🤖 AI正在分析驳回意见，生成优化方案...', kind: 'info', ts: ts3 },
+                  { text: '📝 已识别3处需修改内容，已在WPS文档中标注', kind: 'data', ts: ts3 },
+                  { text: '🔍 二次系统校验通过', kind: 'ok', ts: ts3 },
+                  { text: '⚠️ 请查看AI优化建议，确认修改后重新提交', kind: 'warn', ts: ts3 },
+                ],
+                humanStage: 'resubmit' as const,
+                hseRejected: true,
+                rejectionRound: 1,
+                rejectionAdvice: rejAdvice,
+                humanOk: false,
+              }));
+            }, 1800);
+
+            setChatMsgs(prev => [...prev, {
+              role: 'ai',
+              content: `方案已提交 HSE 审批系统...\n\n⚠️ 审批驳回通知：\n${rejAdvice}\n\n我已分析驳回原因，正在生成优化建议，请稍候。`,
+            }]);
+            return {
+              ...t,
+              status: 'running' as const,
+              logs: [...t.logs,
+                { text: `📤 方案已提交 HSE 审批系统`, kind: 'ok', ts },
+                { text: '🏛️ HSE审批中...', kind: 'info', ts },
+              ],
+              humanOk: false,
+            };
+
+          } else {
+            // 修改后重新提交 → 模拟审批通过
+            const replyText = `✅ 恭喜！作业方案「${t.title}」已通过 HSE 终审！\n\n方案编号：HSE-2025-${String(taskId).padStart(4, '0')}\n审批状态：通过\n生效时间：即时\n\n流程已全部完成，方案归档至系统。`;
+            setChatMsgs(prev => [...prev, { role: 'ai', content: replyText }]);
+            return {
+              ...t,
+              status: 'done' as const,
+              doneCount: t.pipeStages.length,
+              humanOk: true,
+              clarifyMode: false,
+              clarifyInput: '',
+              hseRejected: false,
+              logs: [...t.logs,
+                { text: '📤 优化后方案已重新提交 HSE 审批', kind: 'ok', ts },
+                { text: '🏛️ HSE终审：通过 ✅', kind: 'ok', ts },
+                { text: '✓ 作业方案流程全部完成，已归档', kind: 'ok', ts },
+              ],
+            };
+          }
+        }
+      }
+
+      // ── 通用人工复核逻辑 ─────────────────────────────────────────────────
       const replyText = t.aiReply || `收到确认！「${t.title}」任务已完成。`;
       setChatMsgs(prev => [...prev, {
         role: 'ai',
@@ -1864,6 +2110,68 @@ const EmployeeConfigPage: React.FC<{
                                     );
                                   })}
                                 </div>
+
+                                {/* ── 人工操作区（作业方案专属） ── */}
+                                {task.isOpPlan && task.status === 'human_pending' && (
+                                  <div style={{ marginTop: 14, padding: '14px 16px', borderRadius: 10, border: '1.5px solid #8B5CF6', background: '#faf5ff' }}>
+                                    {/* 驳回意见面板 */}
+                                    {task.hseRejected && task.rejectionAdvice && (
+                                      <div style={{ marginBottom: 12, padding: '12px 14px', borderRadius: 8, background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                                        <div style={{ fontSize: 12, fontWeight: 600, color: '#d97706', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                          <span>🤖</span> AI 审批建议
+                                          {task.rejectionRound && (
+                                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10, background: '#fed7aa', color: '#92400e', fontWeight: 500 }}>第{task.rejectionRound}次驳回</span>
+                                          )}
+                                        </div>
+                                        <pre style={{ fontSize: 11, color: '#78350f', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{task.rejectionAdvice}</pre>
+                                      </div>
+                                    )}
+                                    {/* 操作按钮 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <span style={{ fontSize: 11, color: '#7c3aed', fontWeight: 500, flex: 1 }}>
+                                        {task.humanStage === 'wps' && '等待编制人在 WPS 中完成方案补空'}
+                                        {task.humanStage === 'confirm' && '请确认校验结果，提交 HSE 审批'}
+                                        {task.humanStage === 'resubmit' && '请按AI建议修改后，重新提交审批'}
+                                      </span>
+                                      <button
+                                        onClick={() => handleHumanApprove(task.id)}
+                                        style={{
+                                          padding: '7px 16px', borderRadius: 8, border: 'none',
+                                          background: 'linear-gradient(135deg,#7c3aed,#8B5CF6)',
+                                          color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                          boxShadow: '0 2px 8px rgba(139,92,246,0.35)', whiteSpace: 'nowrap',
+                                        }}
+                                      >
+                                        {task.humanStage === 'wps' && '已完成补空，提交校验'}
+                                        {task.humanStage === 'confirm' && '确认，提交 HSE 审批'}
+                                        {task.humanStage === 'resubmit' && '已修改，重新提交审批'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                {/* 通用人工复核按钮 */}
+                                {!task.isOpPlan && task.status === 'human_pending' && !task.humanOk && (
+                                  <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+                                    <button
+                                      onClick={() => handleHumanApprove(task.id)}
+                                      style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 8px rgba(99,102,241,0.3)' }}
+                                    >确认通过</button>
+                                    <button
+                                      onClick={() => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, clarifyMode: !t.clarifyMode } : t))}
+                                      style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid #c7d2fe', background: '#f5f3ff', color: '#6366F1', fontSize: 12, cursor: 'pointer' }}
+                                    >发送澄清意见</button>
+                                    {task.clarifyMode && (
+                                      <input
+                                        autoFocus
+                                        value={task.clarifyInput ?? ''}
+                                        onChange={e => setTasks(prev => prev.map(t => t.id === task.id ? { ...t, clarifyInput: e.target.value } : t))}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleHumanApprove(task.id, task.clarifyInput); }}
+                                        placeholder="输入澄清意见后回车"
+                                        style={{ flex: 1, padding: '6px 10px', border: '1px solid #c7d2fe', borderRadius: 7, fontSize: 12, outline: 'none' }}
+                                      />
+                                    )}
+                                  </div>
+                                )}
 
                                 {/* ── 任务步骤 ── */}
                                 <div style={{ marginTop: 16 }}>

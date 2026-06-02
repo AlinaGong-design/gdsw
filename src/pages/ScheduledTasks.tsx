@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Button, Input, Select, Badge, Table, Drawer,
+  Button, Input, Select, Badge, Table, Drawer, Modal,
   message, Switch, Tooltip, Popconfirm, Divider, Tag,
 } from 'antd';
 import {
@@ -36,6 +36,13 @@ interface ScheduledTask {
   source: 'chat' | 'task';
 }
 
+interface TaskRunStep {
+  time: string;
+  action: string;
+  result: string;
+  status: 'success' | 'fail' | 'info';
+}
+
 interface TaskRunLog {
   id: string;
   taskId: string;
@@ -43,6 +50,8 @@ interface TaskRunLog {
   status: 'success' | 'fail' | 'running';
   duration: string;
   output: string;
+  triggerMode?: string;
+  steps?: TaskRunStep[];
 }
 
 // ─── Mock 数据 ─────────────────────────────────────────────
@@ -86,9 +95,45 @@ const MOCK_TASKS: ScheduledTask[] = [
 ];
 
 const MOCK_LOGS: TaskRunLog[] = [
-  { id: 'log-001', taskId: 'st-001', runAt: '2026-04-02 08:00:03', status: 'success', duration: '4.2s', output: '财务晨报已生成：昨日销售额 ¥1,248,000，环比+5.2%，毛利率 42.3%。已推送至「财务组」工作群。' },
-  { id: 'log-002', taskId: 'st-001', runAt: '2026-04-01 08:00:02', status: 'success', duration: '3.8s', output: '财务晨报已生成：昨日销售额 ¥1,186,000，环比-2.1%，毛利率 41.8%。已推送至「财务组」工作群。' },
-  { id: 'log-003', taskId: 'st-001', runAt: '2026-03-31 08:00:05', status: 'success', duration: '5.1s', output: '财务晨报已生成：昨日销售额 ¥1,212,000，环比+1.3%，毛利率 43.1%。已推送至「财务组」工作群。' },
+  {
+    id: 'log-001', taskId: 'st-001', runAt: '2026-04-02 08:00:03', status: 'success', duration: '4.2s',
+    triggerMode: '定时触发 · Cron: 0 8 * * 1-5',
+    output: '财务晨报已生成：昨日销售额 ¥1,248,000，环比+5.2%，毛利率 42.3%。已推送至「财务组」工作群。',
+    steps: [
+      { time: '00:00.2', action: '任务初始化', result: '加载任务配置，校验参数', status: 'success' },
+      { time: '00:00.8', action: '拉取数据', result: '成功从财务系统拉取昨日销售数据（共 128 条）', status: 'success' },
+      { time: '00:01.5', action: '数据聚合', result: '计算汇总：销售额 ¥1,248,000 / 环比 +5.2% / 毛利率 42.3%', status: 'success' },
+      { time: '00:02.3', action: '生成报告', result: '使用模板生成财务晨报，共 320 字', status: 'success' },
+      { time: '00:03.6', action: '推送 elink', result: '成功推送至「财务组」工作群，消息 ID: msg-2026040208001', status: 'success' },
+      { time: '00:04.2', action: '任务完成', result: '本次执行成功，耗时 4.2s，结果已归档', status: 'success' },
+    ],
+  },
+  {
+    id: 'log-002', taskId: 'st-001', runAt: '2026-04-01 08:00:02', status: 'success', duration: '3.8s',
+    triggerMode: '定时触发 · Cron: 0 8 * * 1-5',
+    output: '财务晨报已生成：昨日销售额 ¥1,186,000，环比-2.1%，毛利率 41.8%。已推送至「财务组」工作群。',
+    steps: [
+      { time: '00:00.2', action: '任务初始化', result: '加载任务配置，校验参数', status: 'success' },
+      { time: '00:00.7', action: '拉取数据', result: '成功从财务系统拉取昨日销售数据（共 115 条）', status: 'success' },
+      { time: '00:01.4', action: '数据聚合', result: '计算汇总：销售额 ¥1,186,000 / 环比 -2.1% / 毛利率 41.8%', status: 'success' },
+      { time: '00:02.1', action: '生成报告', result: '使用模板生成财务晨报，共 312 字', status: 'success' },
+      { time: '00:03.3', action: '推送 elink', result: '成功推送至「财务组」工作群，消息 ID: msg-2026040108001', status: 'success' },
+      { time: '00:03.8', action: '任务完成', result: '本次执行成功，耗时 3.8s，结果已归档', status: 'success' },
+    ],
+  },
+  {
+    id: 'log-003', taskId: 'st-001', runAt: '2026-03-31 08:00:05', status: 'success', duration: '5.1s',
+    triggerMode: '定时触发 · Cron: 0 8 * * 1-5',
+    output: '财务晨报已生成：昨日销售额 ¥1,212,000，环比+1.3%，毛利率 43.1%。已推送至「财务组」工作群。',
+    steps: [
+      { time: '00:00.2', action: '任务初始化', result: '加载任务配置，校验参数', status: 'success' },
+      { time: '00:00.9', action: '拉取数据', result: '成功从财务系统拉取昨日销售数据（共 132 条）', status: 'success' },
+      { time: '00:01.8', action: '数据聚合', result: '计算汇总：销售额 ¥1,212,000 / 环比 +1.3% / 毛利率 43.1%', status: 'success' },
+      { time: '00:02.7', action: '生成报告', result: '使用模板生成财务晨报，共 328 字', status: 'success' },
+      { time: '00:04.4', action: '推送 elink', result: '成功推送至「财务组」工作群，消息 ID: msg-2026033108001', status: 'success' },
+      { time: '00:05.1', action: '任务完成', result: '本次执行成功，耗时 5.1s，结果已归档', status: 'success' },
+    ],
+  },
 ];
 
 // ─── 触发类型配置 ──────────────────────────────────────────
@@ -332,6 +377,132 @@ const TimeSchedulePicker: React.FC<TimeSchedulePickerProps> = ({ freq, day, time
   );
 };
 
+// ─── 测试运行面板 ──────────────────────────────────────────
+
+type TestRunStatus = 'idle' | 'running' | 'success' | 'fail';
+
+interface TestRunLog {
+  time: string;
+  text: string;
+  type: 'info' | 'success' | 'error';
+}
+
+const TEST_RUN_MOCK: Record<string, TestRunLog[]> = {
+  'de-003': [
+    { time: '00:00.2', text: '▶ 开始执行：财务晨报任务', type: 'info' },
+    { time: '00:00.8', text: '⟳ 正在拉取昨日销售数据...', type: 'info' },
+    { time: '00:01.4', text: '✓ 数据拉取完成：销售额 ¥1,248,000，毛利率 42.3%', type: 'success' },
+    { time: '00:02.1', text: '⟳ 正在生成报告摘要...', type: 'info' },
+    { time: '00:03.0', text: '✓ 报告生成完成（共 320 字）', type: 'success' },
+    { time: '00:03.5', text: '⟳ 正在推送至 elink 工作群...', type: 'info' },
+    { time: '00:04.2', text: '✓ 已成功推送至「财务组」工作群', type: 'success' },
+  ],
+  'de-004': [
+    { time: '00:00.3', text: '▶ 开始执行：代码审查任务', type: 'info' },
+    { time: '00:01.0', text: '⟳ 正在检索最新 PR 列表...', type: 'info' },
+    { time: '00:01.8', text: '✓ 发现 3 个待审查 PR', type: 'success' },
+    { time: '00:02.5', text: '⟳ 正在执行代码质量分析...', type: 'info' },
+    { time: '00:03.8', text: '✓ 审查完成：2 个通过，1 个需改进', type: 'success' },
+    { time: '00:04.2', text: '⟳ 正在将审查结果评论至 PR...', type: 'info' },
+    { time: '00:04.9', text: '✓ 审查结果已评论至对应 PR', type: 'success' },
+  ],
+  default: [
+    { time: '00:00.2', text: '▶ 任务开始执行...', type: 'info' },
+    { time: '00:01.0', text: '⟳ 正在处理任务内容...', type: 'info' },
+    { time: '00:02.4', text: '⟳ 正在生成输出结果...', type: 'info' },
+    { time: '00:03.5', text: '✓ 任务执行完成', type: 'success' },
+    { time: '00:03.8', text: '✓ 结果已推送至指定渠道', type: 'success' },
+  ],
+};
+
+const TestRunPanel: React.FC<{ employeeId: string; taskName: string }> = ({ employeeId, taskName }) => {
+  const [status, setStatus] = useState<TestRunStatus>('idle');
+  const [visibleLogs, setVisibleLogs] = useState<TestRunLog[]>([]);
+  const [duration, setDuration] = useState('');
+  const logEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [visibleLogs]);
+
+  const handleRun = () => {
+    if (status === 'running') return;
+    setStatus('running');
+    setVisibleLogs([]);
+    setDuration('');
+
+    const logs = TEST_RUN_MOCK[employeeId] || TEST_RUN_MOCK['default'];
+    const startMs = Date.now();
+
+    logs.forEach((log, i) => {
+      const [sec, ms] = log.time.split('.').map(Number);
+      const delay = sec * 1000 + ms * 100;
+      setTimeout(() => {
+        setVisibleLogs(prev => [...prev, log]);
+        if (i === logs.length - 1) {
+          const elapsed = ((Date.now() - startMs) / 1000).toFixed(1);
+          setDuration(elapsed);
+          setStatus('success');
+        }
+      }, delay);
+    });
+  };
+
+  const logColor: Record<string, string> = { info: '#9ca3af', success: '#10b981', error: '#ef4444' };
+
+  return (
+    <div style={{ border: '1px solid #e8e8e8', borderRadius: 10, overflow: 'hidden', background: '#fafafa' }}>
+      {/* 面板头部 */}
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 10, background: '#fff' }}>
+        <PlayCircleOutlined style={{ color: '#6366F1', fontSize: 15 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', flex: 1 }}>测试运行</span>
+        {status === 'success' && (
+          <span style={{ fontSize: 11, color: '#10b981', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '1px 8px', fontWeight: 500 }}>
+            ✓ 运行成功 · {duration}s
+          </span>
+        )}
+        {status === 'running' && (
+          <span style={{ fontSize: 11, color: '#6366F1', background: '#f5f3ff', borderRadius: 6, padding: '1px 8px', fontWeight: 500 }}>
+            运行中...
+          </span>
+        )}
+      </div>
+
+      {/* 日志区域 — 点击触发运行 */}
+      <div
+        onClick={handleRun}
+        style={{ height: 180, overflowY: 'auto', padding: '10px 14px', fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 12, background: '#111827', color: '#e5e7eb', cursor: status === 'running' ? 'default' : 'pointer' }}
+      >
+        {status === 'idle' && (
+          <div style={{ color: '#6b7280', marginTop: 60, textAlign: 'center', fontFamily: 'sans-serif' }}>
+            点击此处预览任务执行效果
+          </div>
+        )}
+        {visibleLogs.map((log, i) => (
+          <div key={i} style={{ marginBottom: 4, display: 'flex', gap: 10 }}>
+            <span style={{ color: '#4b5563', flexShrink: 0 }}>[{log.time}]</span>
+            <span style={{ color: logColor[log.type] }}>{log.text}</span>
+          </div>
+        ))}
+        {status === 'running' && (
+          <div style={{ display: 'flex', gap: 4, marginTop: 4, color: '#6b7280' }}>
+            <span style={{ display: 'inline-block', animation: 'blink 1s step-end infinite' }}>▌</span>
+          </div>
+        )}
+        <div ref={logEndRef} />
+      </div>
+
+      {status !== 'idle' && (
+        <div style={{ padding: '6px 14px', borderTop: '1px solid #1f2937', background: '#111827', display: 'flex', gap: 12 }}>
+          <span style={{ fontSize: 11, color: '#4b5563' }}>任务：{taskName || '（未命名）'}</span>
+          <span style={{ fontSize: 11, color: '#4b5563' }}>模式：测试运行（不实际推送）</span>
+        </div>
+      )}
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
+    </div>
+  );
+};
+
 // ─── 新建任务 Drawer ───────────────────────────────────────
 
 const TaskCreateDrawer: React.FC<{
@@ -347,11 +518,40 @@ const TaskCreateDrawer: React.FC<{
   const [freq, setFreq]               = useState<FreqType>('每天');
   const [day, setDay]                 = useState('');
   const [time, setTime]               = useState('08:00');
+  const [createTestPanelOpen, setCreateTestPanelOpen] = useState(false);
+  const [createTestStatus, setCreateTestStatus] = useState<TestRunStatus>('idle');
+  const [createTestLogs, setCreateTestLogs] = useState<TestRunLog[]>([]);
+  const [createTestDuration, setCreateTestDuration] = useState('');
+  const createTestLogEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    createTestLogEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [createTestLogs]);
+
+  const handleCreateTestRun = () => {
+    if (createTestStatus === 'running') return;
+    setCreateTestStatus('running');
+    setCreateTestLogs([]);
+    setCreateTestDuration('');
+    const logs = TEST_RUN_MOCK[employee] || TEST_RUN_MOCK['default'];
+    const startMs = Date.now();
+    logs.forEach((log, i) => {
+      const [sec, ms] = log.time.split('.').map(Number);
+      setTimeout(() => {
+        setCreateTestLogs(prev => [...prev, log]);
+        if (i === logs.length - 1) {
+          setCreateTestDuration(((Date.now() - startMs) / 1000).toFixed(1));
+          setCreateTestStatus('success');
+        }
+      }, sec * 1000 + ms * 100);
+    });
+  };
 
   const handleClose = () => {
     setTaskName(''); setTaskContent(''); setEmployee('');
     setTriggerType('scheduled'); setChannel('elink');
     setFreq('每天'); setDay(''); setTime('08:00');
+    setCreateTestPanelOpen(false); setCreateTestStatus('idle'); setCreateTestLogs([]);
     onClose();
   };
 
@@ -385,95 +585,263 @@ const TaskCreateDrawer: React.FC<{
       title={<span style={{ fontSize: 14, fontWeight: 700 }}>新建任务</span>}
       open={open}
       onClose={handleClose}
-      width={500}
+      width={createTestPanelOpen ? 920 : 500}
+      styles={{ body: { padding: 0, display: 'flex', overflow: 'hidden' } }}
       footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button onClick={handleClose}>取消</Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button
-            type="primary"
-            icon={<CheckCircleOutlined />}
-            style={{ background: '#6366F1', borderColor: '#6366F1' }}
-            onClick={handleSave}
+            icon={<PlayCircleOutlined />}
+            style={{ color: '#6366F1', borderColor: '#6366F1' }}
+            onClick={() => { setCreateTestPanelOpen(true); handleCreateTestRun(); }}
           >
-            确认创建
+            测试运行
           </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button onClick={handleClose}>取消</Button>
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              style={{ background: '#6366F1', borderColor: '#6366F1' }}
+              onClick={handleSave}
+            >
+              确认创建
+            </Button>
+          </div>
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-            任务名称 <span style={{ color: '#ff4d4f' }}>*</span>
+      {/* 左侧测试运行面板 */}
+      {createTestPanelOpen && (
+        <div style={{ width: 400, borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', flexShrink: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>测试运行</span>
+            <button
+              onClick={() => setCreateTestPanelOpen(false)}
+              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
+            >×</button>
           </div>
-          <Input
-            value={taskName}
-            onChange={e => setTaskName(e.target.value)}
-            placeholder="请输入任务名称"
-            style={{ borderRadius: 8 }}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行内容</div>
-          <Input.TextArea
-            value={taskContent}
-            onChange={e => setTaskContent(e.target.value)}
-            rows={3}
-            placeholder="描述该任务需要执行的具体内容..."
-            style={{ borderRadius: 8, resize: 'none' }}
-          />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              执行员工 <span style={{ color: '#ff4d4f' }}>*</span>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', flexShrink: 0 }}>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>执行员工</div>
+            <div style={{ fontSize: 12, color: '#374151', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RobotOutlined style={{ color: '#6366F1' }} />
+              {EMPLOYEES.find(e => e.id === employee)?.name || '（未选择）'}
             </div>
-            <Select
-              value={employee || undefined}
-              onChange={setEmployee}
-              placeholder="选择执行员工"
-              style={{ width: '100%' }}
-              options={EMPLOYEES.map(e => ({ label: e.name, value: e.id }))}
-            />
           </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>推送渠道</div>
-            <Select
-              value={channel}
-              onChange={setChannel}
-              style={{ width: '100%' }}
-              options={CHANNELS.map(c => ({ label: c, value: c }))}
-            />
-          </div>
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>触发类型</div>
-          <Select
-            value={triggerType}
-            onChange={v => setTriggerType(v)}
-            style={{ width: '100%' }}
-            options={Object.entries(TRIGGER_CONFIG).map(([k, v]) => ({
-              label: (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: v.color }}>{v.icon}</span> {v.label}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div
+              style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 12, background: '#fff', color: '#1a1a1a' }}
+            >
+              {createTestStatus === 'idle' && (
+                <div style={{ color: '#9ca3af', marginTop: 80, textAlign: 'center', fontFamily: 'sans-serif', fontSize: 13 }}>
+                  <div style={{ marginBottom: 6, fontSize: 28 }}>▶</div>
+                  正在准备运行...
+                </div>
+              )}
+              {createTestLogs.map((log, i) => (
+                <div key={i} style={{ marginBottom: 4, display: 'flex', gap: 10 }}>
+                  <span style={{ color: '#9ca3af', flexShrink: 0 }}>[{log.time}]</span>
+                  <span style={{ color: log.type === 'success' ? '#10b981' : log.type === 'error' ? '#ef4444' : '#374151' }}>{log.text}</span>
+                </div>
+              ))}
+              {createTestStatus === 'running' && (
+                <div style={{ color: '#9ca3af', marginTop: 4 }}>
+                  <span style={{ display: 'inline-block', animation: 'blink 1s step-end infinite' }}>▌</span>
+                </div>
+              )}
+              <div ref={createTestLogEndRef} />
+            </div>
+            <div style={{ padding: '8px 16px', borderTop: '1px solid #f0f0f0', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              {createTestStatus === 'idle' && <span style={{ fontSize: 11, color: '#9ca3af' }}>就绪</span>}
+              {createTestStatus === 'running' && (
+                <span style={{ fontSize: 11, color: '#6366F1', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ display: 'inline-block', width: 8, height: 8, border: '1.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  运行中...
                 </span>
-              ),
-              value: k,
-            }))}
-          />
+              )}
+              {createTestStatus === 'success' && (
+                <span style={{ fontSize: 11, color: '#10b981' }}>✓ 运行成功 · {createTestDuration}s</span>
+              )}
+              <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 'auto' }}>模式：测试运行（不实际推送）</span>
+            </div>
+          </div>
         </div>
-        {triggerType === 'scheduled' && (
+      )}
+
+      {/* 右侧表单 */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              执行时间 <span style={{ color: '#ff4d4f' }}>*</span>
+              任务名称 <span style={{ color: '#ff4d4f' }}>*</span>
             </div>
-            <TimeSchedulePicker
-              freq={freq} day={day} time={time}
-              onChange={(f, d, t) => { setFreq(f); setDay(d); setTime(t); }}
+            <Input
+              value={taskName}
+              onChange={e => setTaskName(e.target.value)}
+              placeholder="请输入任务名称"
+              style={{ borderRadius: 8 }}
             />
           </div>
-        )}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行内容</div>
+            <Input.TextArea
+              value={taskContent}
+              onChange={e => setTaskContent(e.target.value)}
+              rows={3}
+              placeholder="描述该任务需要执行的具体内容..."
+              style={{ borderRadius: 8, resize: 'none' }}
+            />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+                执行员工 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+              <Select
+                value={employee || undefined}
+                onChange={setEmployee}
+                placeholder="选择执行员工"
+                style={{ width: '100%' }}
+                options={EMPLOYEES.map(e => ({ label: e.name, value: e.id }))}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>推送渠道</div>
+              <Select
+                value={channel}
+                onChange={setChannel}
+                style={{ width: '100%' }}
+                options={CHANNELS.map(c => ({ label: c, value: c }))}
+              />
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>触发类型</div>
+            <Select
+              value={triggerType}
+              onChange={v => setTriggerType(v)}
+              style={{ width: '100%' }}
+              options={Object.entries(TRIGGER_CONFIG).map(([k, v]) => ({
+                label: (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: v.color }}>{v.icon}</span> {v.label}
+                  </span>
+                ),
+                value: k,
+              }))}
+            />
+          </div>
+          {triggerType === 'scheduled' && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+                执行时间 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+              <TimeSchedulePicker
+                freq={freq} day={day} time={time}
+                onChange={(f, d, t) => { setFreq(f); setDay(d); setTime(t); }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </Drawer>
+  );
+};
+
+// ─── 执行记录详情 Modal ────────────────────────────────────
+
+const RunLogDetailModal: React.FC<{
+  log: TaskRunLog | null;
+  task: ScheduledTask | null;
+  open: boolean;
+  onClose: () => void;
+}> = ({ log, task, open, onClose }) => {
+  if (!log || !task) return null;
+
+  const isSuccess = log.status === 'success';
+  const stepStatusColor = { success: '#10b981', fail: '#ef4444', info: '#6366F1' };
+  const stepStatusBg   = { success: '#f0fdf4', fail: '#fff1f2', info: '#f0f4ff' };
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={620}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 15, color: isSuccess ? '#10b981' : '#ef4444' }}>
+            {isSuccess ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>执行详情</span>
+          <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 10, background: isSuccess ? '#f0fdf4' : '#fff1f2', color: isSuccess ? '#15803d' : '#dc2626', fontWeight: 600 }}>
+            {isSuccess ? '执行成功' : '执行失败'}
+          </span>
+        </div>
+      }
+      styles={{ body: { padding: '16px 24px 24px' } }}
+    >
+      {/* 基本信息 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20, padding: '14px 16px', background: '#f9fafb', borderRadius: 10, border: '1px solid #f0f0f0' }}>
+        {[
+          { label: '任务名称', value: task.name },
+          { label: '执行员工', value: task.employeeName },
+          { label: '执行时间', value: log.runAt },
+          { label: '耗时', value: log.duration },
+          { label: '触发方式', value: log.triggerMode || (task.triggerType === 'scheduled' ? '定时触发' : '事件触发') },
+          { label: '推送渠道', value: task.channel },
+        ].map(({ label, value }) => (
+          <div key={label}>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>{label}</div>
+            <div style={{ fontSize: 12, color: '#1a1a1a', fontWeight: 500 }}>{value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 执行步骤 */}
+      {log.steps && log.steps.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <HistoryOutlined style={{ color: '#6366F1' }} /> 执行步骤
+          </div>
+          <div style={{ position: 'relative' }}>
+            {/* 竖线 */}
+            <div style={{ position: 'absolute', left: 11, top: 12, bottom: 12, width: 1, background: '#e5e7eb', zIndex: 0 }} />
+            {log.steps.map((step, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: i < log.steps!.length - 1 ? 14 : 0, position: 'relative', zIndex: 1 }}>
+                {/* 圆点 */}
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                  background: stepStatusBg[step.status], border: `2px solid ${stepStatusColor[step.status]}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1,
+                }}>
+                  <span style={{ fontSize: 9, color: stepStatusColor[step.status], fontWeight: 700 }}>
+                    {step.status === 'success' ? '✓' : step.status === 'fail' ? '✕' : '●'}
+                  </span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{step.action}</span>
+                    <span style={{ fontSize: 10, color: '#9ca3af', fontFamily: 'monospace' }}>[{step.time}]</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6b7280', lineHeight: 1.6, background: '#f9fafb', borderRadius: 5, padding: '4px 8px', border: '1px solid #f0f0f0' }}>
+                    {step.result}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 输出结果 */}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>输出结果</div>
+        <div style={{ padding: '12px 14px', background: '#111827', borderRadius: 8, fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 12, color: '#e5e7eb', lineHeight: 1.8 }}>
+          <span style={{ color: '#10b981', marginRight: 8 }}>✓</span>
+          {log.output}
+        </div>
+      </div>
+    </Modal>
   );
 };
 
@@ -488,6 +856,40 @@ const TaskEditDrawer: React.FC<{
   const [freq, setFreq] = useState<FreqType>(parsed.freq);
   const [day,  setDay]  = useState(parsed.day);
   const [time, setTime] = useState(parsed.time);
+  const [detailLog, setDetailLog] = useState<TaskRunLog | null>(null);
+  const [testPanelOpen, setTestPanelOpen] = useState(false);
+  const [testStatus, setTestStatus] = useState<TestRunStatus>('idle');
+  const [testLogs, setTestLogs] = useState<TestRunLog[]>([]);
+  const [testDuration, setTestDuration] = useState('');
+  const testLogEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    testLogEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [testLogs]);
+
+  const handleTestRun = () => {
+    if (testStatus === 'running') return;
+    setTestStatus('running');
+    setTestLogs([]);
+    setTestDuration('');
+    const logs = TEST_RUN_MOCK[task?.employeeId || ''] || TEST_RUN_MOCK['default'];
+    const startMs = Date.now();
+    logs.forEach((log, i) => {
+      const [sec, ms] = log.time.split('.').map(Number);
+      setTimeout(() => {
+        setTestLogs(prev => [...prev, log]);
+        if (i === logs.length - 1) {
+          setTestDuration(((Date.now() - startMs) / 1000).toFixed(1));
+          setTestStatus('success');
+        }
+      }, sec * 1000 + ms * 100);
+    });
+  };
+
+  // Reset test state when drawer closes
+  React.useEffect(() => {
+    if (!open) { setTestPanelOpen(false); setTestStatus('idle'); setTestLogs([]); }
+  }, [open]);
 
   // Sync when task changes
   React.useEffect(() => {
@@ -500,79 +902,168 @@ const TaskEditDrawer: React.FC<{
   if (!task) return null;
   const tc = TRIGGER_CONFIG[task.triggerType];
 
+  const logColor: Record<string, string> = { info: '#9ca3af', success: '#10b981', error: '#ef4444' };
+
   return (
+    <>
     <Drawer
       title={<span style={{ fontSize: 14, fontWeight: 700 }}>编辑任务 · {task.name}</span>}
       open={open}
       onClose={onClose}
-      width={500}
+      width={testPanelOpen ? 920 : 500}
+      styles={{ body: { padding: 0, display: 'flex', overflow: 'hidden' } }}
       footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <Button onClick={onClose}>取消</Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button
-            type="primary"
-            style={{ background: '#6366F1', borderColor: '#6366F1' }}
-            onClick={() => { message.success('任务已保存'); onClose(); }}
+            icon={<PlayCircleOutlined />}
+            style={{ color: '#6366F1', borderColor: '#6366F1' }}
+            onClick={() => { setTestPanelOpen(true); handleTestRun(); }}
           >
-            保存更改
+            测试运行
           </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button onClick={onClose}>取消</Button>
+            <Button
+              type="primary"
+              style={{ background: '#6366F1', borderColor: '#6366F1' }}
+              onClick={() => { message.success('任务已保存'); onClose(); }}
+            >
+              保存更改
+            </Button>
+          </div>
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>任务名称</div>
-          <Input defaultValue={task.name} style={{ borderRadius: 8 }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行内容</div>
-          <Input.TextArea defaultValue={task.taskContent} rows={3} style={{ borderRadius: 8, resize: 'none' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>触发类型</div>
-            <div style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', gap: 6, background: '#fafafa' }}>
-              <span style={{ color: tc.color, fontSize: 14 }}>{tc.icon}</span>
-              <span style={{ fontSize: 12, color: '#555' }}>{tc.label}</span>
+      {/* 左侧测试运行面板 */}
+      {testPanelOpen && (
+        <div style={{ width: 400, borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+          {/* 面板标题栏 */}
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', flexShrink: 0 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>测试运行</span>
+            <button
+              onClick={() => setTestPanelOpen(false)}
+              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 18, lineHeight: 1, padding: '0 2px' }}
+            >×</button>
+          </div>
+
+          {/* 任务信息 */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', flexShrink: 0 }}>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>执行员工</div>
+            <div style={{ fontSize: 12, color: '#374151', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RobotOutlined style={{ color: '#6366F1' }} />
+              {task.employeeName}
             </div>
           </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>推送渠道</div>
-            <Select defaultValue={task.channel} style={{ width: '100%' }} options={CHANNELS.map(c => ({ label: c, value: c }))} />
+
+          {/* 日志区域 */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div
+              style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', fontFamily: '"SF Mono", "Fira Code", monospace', fontSize: 12, background: '#fff', color: '#1a1a1a' }}
+            >
+              {testStatus === 'idle' && (
+                <div style={{ color: '#9ca3af', marginTop: 80, textAlign: 'center', fontFamily: 'sans-serif', fontSize: 13 }}>
+                  <div style={{ marginBottom: 6, fontSize: 28 }}>▶</div>
+                  正在准备运行...
+                </div>
+              )}
+              {testLogs.map((log, i) => (
+                <div key={i} style={{ marginBottom: 4, display: 'flex', gap: 10 }}>
+                  <span style={{ color: '#9ca3af', flexShrink: 0 }}>[{log.time}]</span>
+                  <span style={{ color: log.type === 'success' ? '#10b981' : log.type === 'error' ? '#ef4444' : '#374151' }}>{log.text}</span>
+                </div>
+              ))}
+              {testStatus === 'running' && (
+                <div style={{ color: '#9ca3af', marginTop: 4 }}>
+                  <span style={{ display: 'inline-block', animation: 'blink 1s step-end infinite' }}>▌</span>
+                </div>
+              )}
+              <div ref={testLogEndRef} />
+            </div>
+
+            {/* 状态栏 */}
+            <div style={{ padding: '8px 16px', borderTop: '1px solid #f0f0f0', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              {testStatus === 'idle' && <span style={{ fontSize: 11, color: '#9ca3af' }}>就绪</span>}
+              {testStatus === 'running' && (
+                <span style={{ fontSize: 11, color: '#6366F1', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ display: 'inline-block', width: 8, height: 8, border: '1.5px solid #6366F1', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  运行中...
+                </span>
+              )}
+              {testStatus === 'success' && (
+                <span style={{ fontSize: 11, color: '#10b981' }}>✓ 运行成功 · {testDuration}s</span>
+              )}
+              <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 'auto' }}>模式：测试运行（不实际推送）</span>
+            </div>
           </div>
         </div>
-        {task.triggerType === 'scheduled' && (
+      )}
+
+      {/* 右侧表单 */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行时间</div>
-            <TimeSchedulePicker
-              freq={freq} day={day} time={time}
-              onChange={(f, d, t) => { setFreq(f); setDay(d); setTime(t); }}
-            />
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>任务名称</div>
+            <Input defaultValue={task.name} style={{ borderRadius: 8 }} />
           </div>
-        )}
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <HistoryOutlined style={{ color: '#6366F1' }} /> 最近执行记录
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行内容</div>
+            <Input.TextArea defaultValue={task.taskContent} rows={3} style={{ borderRadius: 8, resize: 'none' }} />
           </div>
-          <div style={{ border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
-            {MOCK_LOGS.filter(l => l.taskId === task.id).slice(0, 3).map((log, idx, arr) => (
-              <div key={log.id} style={{ padding: '10px 14px', borderBottom: idx < arr.length - 1 ? '1px solid #f5f5f5' : 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 14, color: log.status === 'success' ? '#10b981' : '#ef4444' }}>
-                  {log.status === 'success' ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: '#333', lineHeight: 1.5 }}>{log.output.slice(0, 60)}…</div>
-                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>{log.runAt} · 耗时 {log.duration}</div>
-                </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>触发类型</div>
+              <div style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', gap: 6, background: '#fafafa' }}>
+                <span style={{ color: tc.color, fontSize: 14 }}>{tc.icon}</span>
+                <span style={{ fontSize: 12, color: '#555' }}>{tc.label}</span>
               </div>
-            ))}
-            {MOCK_LOGS.filter(l => l.taskId === task.id).length === 0 && (
-              <div style={{ padding: '16px', textAlign: 'center', color: '#bbb', fontSize: 12 }}>暂无执行记录</div>
-            )}
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>推送渠道</div>
+              <Select defaultValue={task.channel} style={{ width: '100%' }} options={CHANNELS.map(c => ({ label: c, value: c }))} />
+            </div>
+          </div>
+          {task.triggerType === 'scheduled' && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>执行时间</div>
+              <TimeSchedulePicker
+                freq={freq} day={day} time={time}
+                onChange={(f, d, t) => { setFreq(f); setDay(d); setTime(t); }}
+              />
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <HistoryOutlined style={{ color: '#6366F1' }} /> 最近执行记录
+            </div>
+            <div style={{ border: '1px solid #f0f0f0', borderRadius: 8, overflow: 'hidden' }}>
+              {MOCK_LOGS.filter(l => l.taskId === task.id).slice(0, 3).map((log, idx, arr) => (
+                <div key={log.id} style={{ padding: '10px 14px', borderBottom: idx < arr.length - 1 ? '1px solid #f5f5f5' : 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, color: log.status === 'success' ? '#10b981' : '#ef4444' }}>
+                    {log.status === 'success' ? <CheckCircleOutlined /> : <ExclamationCircleOutlined />}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: '#333', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.output.slice(0, 60)}…</div>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>{log.runAt} · 耗时 {log.duration}</div>
+                  </div>
+                </div>
+              ))}
+              {MOCK_LOGS.filter(l => l.taskId === task.id).length === 0 && (
+                <div style={{ padding: '16px', textAlign: 'center', color: '#bbb', fontSize: 12 }}>暂无执行记录</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </Drawer>
+
+    <RunLogDetailModal
+      log={detailLog}
+      task={task}
+      open={!!detailLog}
+      onClose={() => setDetailLog(null)}
+    />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } } @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
+    </>
   );
 };
 
@@ -732,10 +1223,6 @@ const ScheduledTasks: React.FC = () => {
           <Button size="small" type="text" icon={<EditOutlined />} style={{ color: '#6366F1', fontSize: 12 }}
             onClick={() => { setEditingTask(r); setEditDrawerOpen(true); }}>
             编辑
-          </Button>
-          <Button size="small" type="text" icon={<PlayCircleOutlined />} style={{ color: '#10b981', fontSize: 12 }}
-            onClick={() => message.success(`「${r.name}」已手动触发执行`)}>
-            立即执行
           </Button>
           <Popconfirm title="确认删除此任务？" onConfirm={() => handleDelete(r.id)} okText="删除" cancelText="取消" okButtonProps={{ danger: true }}>
             <Button size="small" type="text" icon={<DeleteOutlined />} style={{ color: '#ff4d4f', fontSize: 12 }} />
