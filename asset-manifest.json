@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/guangdongdianwang/static/css/main.aaa82148.css",
-    "main.js": "/guangdongdianwang/static/js/main.8f83b3da.js",
-    "static/js/453.f732de9b.chunk.js": "/guangdongdianwang/static/js/453.f732de9b.chunk.js",
-    "index.html": "/guangdongdianwang/index.html",
-    "main.aaa82148.css.map": "/guangdongdianwang/static/css/main.aaa82148.css.map",
-    "main.8f83b3da.js.map": "/guangdongdianwang/static/js/main.8f83b3da.js.map",
-    "453.f732de9b.chunk.js.map": "/guangdongdianwang/static/js/453.f732de9b.chunk.js.map"
+    "main.css": "/gdsw/static/css/main.aaa82148.css",
+    "main.js": "/gdsw/static/js/main.887bff46.js",
+    "static/js/453.f732de9b.chunk.js": "/gdsw/static/js/453.f732de9b.chunk.js",
+    "index.html": "/gdsw/index.html",
+    "main.aaa82148.css.map": "/gdsw/static/css/main.aaa82148.css.map",
+    "main.887bff46.js.map": "/gdsw/static/js/main.887bff46.js.map",
+    "453.f732de9b.chunk.js.map": "/gdsw/static/js/453.f732de9b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.aaa82148.css",
-    "static/js/main.8f83b3da.js"
+    "static/js/main.887bff46.js"
   ]
 }
